@@ -1,6 +1,7 @@
 import './App.css'
 
 import { LoginPage } from './usuario/Login'
+import { HomeAluno } from './aluno/HomeAluno'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
@@ -18,6 +19,7 @@ function App() {
             {/* Definindo as rotas da aplicação */}
             <Routes>
               <Route path='/login' element={<LoginPage />} />
+              <Route path='/home-aluno' element={<HomeAluno />} />
             </Routes>
           </div>
         </div>
