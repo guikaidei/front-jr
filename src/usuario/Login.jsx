@@ -26,15 +26,17 @@ const FormContainer = styled(Paper)(({ theme }) => ({
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
-        backgroundColor: 'rgba(157, 48, 44, 1)',
+        backgroundColor: '#ab2325',
         color: 'white',
         '&:hover': {
-            backgroundColor: 'rgba(127, 39, 36, 1)',
+            backgroundColor: '#cb6062',
         },
     },
     width: '250px',
     height: '60px',
     marginTop: '20px',
+    fontFamily: 'Open Sans',
+    fontWeight: 'light',
 }));
 
 const CustomTextField = styled(TextField)({
@@ -111,12 +113,12 @@ export function LoginPage() {
                 {/* O Grid com a imagem será ocultado em telas menores que md */}
                 <Grid item xs={12} md={6} sx={{ display: { xs: 'none', md: 'block' } }} style={{ height: '100%' }}>
                     <ImageContainer>
-                        <img src="/assets/image.png" alt="Login" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src="/assets/foto_login_page.png" alt="Login" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </ImageContainer>
                 </Grid>
                 <Grid item xs={12} md={6} style={{ height: '100%' }}>
                     <FormContainer elevation={0}>
-                        <Typography variant="h4" align="center" style={{ margin: '20px', color: 'rgba(157, 48, 44, 1)', fontWeight: 'bold' }}>Login</Typography>
+                        <Typography variant="h4" align="center" style={{ margin: '20px', color: '#ab2325', fontWeight: 'bold', fontFamily: 'Open Sans' }}>Login</Typography>
                         <form style={{ display: "flex", alignItems: "center", flexDirection: 'column', width: '100%', maxWidth: '400px' }}>
                             <CustomTextField fullWidth label='Matrícula' value={matricula} onChange={(event) => setMatricula(event.target.value)} />
                             <CustomTextField fullWidth label='Senha' type='password' value={senha} onChange={(event) => setSenha(event.target.value)} />
