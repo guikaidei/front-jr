@@ -6,16 +6,19 @@ import MenuIcon from '@mui/icons-material/Menu';
 import { styled } from '@mui/material/styles';
 
 const StyledAppBar = styled(AppBar)({
-    background: 'rgba(157, 48, 44, 1)', // Cor de fundo
+    background: '#ab2325', // Cor de fundo
     boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', // Pequena sombra
     position: 'fixed', // Mantém a barra no topo da tela
     zIndex: 1100, // Garante que a AppBar fique acima de outros elementos
 });
 
 const StyledButton = styled(Button)({
+    fontFamily: 'Open Sans', // Fonte
     fontWeight: 'bold', // Negrito
     fontSize: '16px', // Tamanho da fonte
 });
+
+const logo = 'assets/logo_navbar_transparent.png';
 
 export function NavBar() {
     const navigate = useNavigate();
@@ -51,11 +54,9 @@ export function NavBar() {
                     sx={{display: { xs: 'none', md: 'flex' }}}
                     onClick={() => navigate('/')}
                 >
-                    <CelebrationIcon sx={{ color: 'white' }} />
+                    <img src={logo} alt='Logo' style={{ height: '40px', display: { xs: 'flex', md: 'none' } }} />
                 </IconButton>
-                <Typography variant='h6' component='div' sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, fontWeight: 'bold', fontSize: '24px' }}>
-                    Cursinho Insper
-                </Typography>
+                
 
                 {/* Botões em telas maiores */}
                 <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
@@ -89,11 +90,8 @@ export function NavBar() {
                     sx={{ display: { xs: 'flex', md: 'none' } }}
                     onClick={() => navigate('/')}
                 >
-                    <CelebrationIcon sx={{ color: 'white' }} />
+                    <img src={logo} alt='Logo' style={{ height: '40px', display: { xs: 'flex', md: 'none' } }} />
                 </IconButton>
-                <Typography variant='h6' component='div' sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' }, fontWeight: 'bold', fontSize: '24px' }}>
-                    Cursinho Insper
-                </Typography>
             </Toolbar>
         </StyledAppBar>
     );
