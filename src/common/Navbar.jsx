@@ -7,7 +7,6 @@ import { styled } from '@mui/material/styles';
 
 const StyledAppBar = styled(AppBar)({
     background: '#ab2325', // Cor de fundo
-    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', // Pequena sombra
     position: 'fixed', // Mantém a barra no topo da tela
     zIndex: 1100, // Garante que a AppBar fique acima de outros elementos
 });
