@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { List, ListItem, ListItemText, Typography, Box, Grid, Modal, Button, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { NavBar } from '../common/navbar';
+import { format, parseISO } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 
 export function HomeAluno() {
     const navigate = useNavigate();
@@ -32,22 +34,29 @@ export function HomeAluno() {
         {
             titulo: 'Prova de Matemática',
             conteudo: 'A prova de matemática será na próxima segunda-feira.',
+            data: '2021-10-10',
             materia: 'Matemática',
             autor: 'Prof. João'
         },
         {
             titulo: 'Leitura obrigatória de Português',
             conteudo: 'Leitura obrigatória do livro "Memórias Póstumas de Brás Cubas".',
+            data: '2021-10-15',
             materia: 'Português',
             autor: 'Profª. Maria'
         },
         {
             titulo: 'Aula prática de Biologia',
             conteudo: 'Teremos uma aula prática no laboratório sobre células animais.',
+            data: '2021-10-20',
             materia: 'Biologia',
             autor: 'Prof. Carlos'
         }
     ];
+
+    // Ordenar avisos por data (do mais recente para o mais antigo)
+    const avisosOrdenados = [...avisos].sort((a, b) => new Date(b.data) - new Date(a.data));
+
 
     const [nomeAluno, setNomeAluno] = useState('Joao');
     const [open, setOpen] = useState(false);
@@ -87,7 +96,7 @@ export function HomeAluno() {
                     Avisos
                 </Typography>
                 <List sx={{ backgroundColor: '#ffffff', borderRadius: '0px', width: '100%', maxWidth: '600px' }}>
-                    {avisos.map((aviso, index) => (
+                    {avisosOrdenados.map((aviso, index) => (
                         <ListItem 
                             key={index} 
                             button 
@@ -97,16 +106,21 @@ export function HomeAluno() {
                                 backgroundColor: 'white',
                                 boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
                                 '&:last-child': { marginBottom: 0 },
+                                padding: '15px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
                             }}
                         >
-                            <Box sx={{ width: '100%' }}>
-                                <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                    {aviso.titulo}
-                                </Typography>
-                                <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                    Matéria: {aviso.materia}
-                                </Typography>
-                            </Box>
+                            <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
+                                {aviso.titulo}
+                            </Typography>
+                            <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                Matéria: {aviso.materia}
+                            </Typography>
+                            <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
+                                {format(parseISO(aviso.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                            </Typography>
                         </ListItem>
                     ))}
                 </List>
@@ -225,22 +239,25 @@ export function HomeAluno() {
                 >
                     {avisoSelecionado && (
                         <div>
-                            <Typography id="modal-aviso-titulo" variant="h6" component="h2" sx={{ color: 'black',  fontFamily: 'Open Sans' }}>
+                            <Typography id="modal-aviso-titulo" variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans' }}>
                                 {avisoSelecionado.titulo}
                             </Typography>
-                            <Typography id="modal-aviso-conteudo" sx={{ mt: 2, color: 'black',  fontFamily: 'Open Sans' }}>
+                            <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
+                                {format(parseISO(avisoSelecionado.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                            </Typography>
+                            <Typography id="modal-aviso-conteudo" sx={{ mt: 2, color: 'black', fontFamily: 'Open Sans' }}>
                                 {avisoSelecionado.conteudo}
                             </Typography>
-                            <Typography sx={{ mt: 2, color: 'black',  fontFamily: 'Open Sans' }}>
+                            <Typography sx={{ mt: 2, color: 'black', fontFamily: 'Open Sans' }}>
                                 <strong>Matéria:</strong> {avisoSelecionado.materia}
                             </Typography>
-                            <Typography sx={{ mt: 2, color: 'black',  fontFamily: 'Open Sans' }}>
+                            <Typography sx={{ mt: 2, color: 'black', fontFamily: 'Open Sans' }}>
                                 <strong>Autor:</strong> {avisoSelecionado.autor}
                             </Typography>
                             <Button 
                                 onClick={handleCloseModal} 
                                 variant="contained" 
-                                sx={{ mt: 3, backgroundColor: 'black', color: 'white',  fontFamily: 'Open Sans' }}
+                                sx={{ mt: 3, backgroundColor: 'black', color: 'white', fontFamily: 'Open Sans' }}
                             >
                                 Fechar
                             </Button>
