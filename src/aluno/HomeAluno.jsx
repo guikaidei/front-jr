@@ -239,7 +239,7 @@ export function HomeAluno() {
                 >
                     {avisoSelecionado && (
                         <div>
-                            <Typography id="modal-aviso-titulo" variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans' }}>
+                            <Typography id="modal-aviso-titulo" variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans', fontWeight: 'bold' }}>
                                 {avisoSelecionado.titulo}
                             </Typography>
                             <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
@@ -257,7 +257,7 @@ export function HomeAluno() {
                             <Button 
                                 onClick={handleCloseModal} 
                                 variant="contained" 
-                                sx={{ mt: 3, backgroundColor: 'black', color: 'white', fontFamily: 'Open Sans' }}
+                                sx={{ mt: 3, backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}
                             >
                                 Fechar
                             </Button>
