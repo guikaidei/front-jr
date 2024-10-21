@@ -3,6 +3,7 @@ import './App.css'
 import { LoginPage } from './usuario/Login'
 import { HomeAluno } from './aluno/HomeAluno'
 import { HomeProfessor } from './professor/HomeProfessor'
+import { HomeGestor } from './gestor/HomeGestor'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
@@ -22,6 +23,7 @@ function App() {
               <Route path='/login' element={<LoginPage />} />
               <Route path='/home-aluno' element={<HomeAluno />} />
               <Route path='/home-professor' element={<HomeProfessor />} />
+              <Route path='/home-gestor' element={<HomeGestor />} />
             </Routes>
           </div>
         </div>
