@@ -8,6 +8,10 @@ import { ListaAlunos } from './aluno/ListaAlunos'
 import { ListaProfessores } from './professor/ListaProfessores'
 import { ListaGestores } from './gestor/ListaGestores'
 import { GerenciaNotas } from './gestor/GerenciaNotas'
+import { GerenciaMatematica } from './gestor/GerenciaMatematica'
+import { GerenciaPortugues } from './gestor/GerenciaPortugues'
+import { GerenciaHumanas } from './gestor/GerenciaHumanas'
+import { GerenciaNaturais } from './gestor/GerenciaNaturais'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
@@ -32,6 +36,10 @@ function App() {
               <Route path='/usuarios/professores' element={<ListaProfessores />} />
               <Route path='/usuarios/gestores' element={<ListaGestores />} />
               <Route path='/gestor/gerencia-notas' element={<GerenciaNotas />} />
+              <Route path='/gestor/gerencia-matematica' element={<GerenciaMatematica />} />
+              <Route path='/gestor/gerencia-portugues' element={<GerenciaPortugues />} />
+              <Route path='/gestor/gerencia-humanas' element={<GerenciaHumanas />} />
+              <Route path='/gestor/gerencia-naturais' element={<GerenciaNaturais />} />
             </Routes>
           </div>
         </div>
