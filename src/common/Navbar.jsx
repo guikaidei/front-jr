@@ -17,7 +17,7 @@ const StyledButton = styled(Button)({
     fontSize: '16px', // Tamanho da fonte
 });
 
-const logo = 'assets/logo_navbar_transparent.png';
+const logo = '/assets/logo_navbar_transparent.png';
 
 export function NavBar() {
     const navigate = useNavigate();

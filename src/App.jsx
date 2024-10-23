@@ -4,6 +4,10 @@ import { LoginPage } from './usuario/Login'
 import { HomeAluno } from './aluno/HomeAluno'
 import { HomeProfessor } from './professor/HomeProfessor'
 import { HomeGestor } from './gestor/HomeGestor'
+import { ListaAlunos } from './aluno/ListaAlunos'
+import { ListaProfessores } from './professor/ListaProfessores'
+import { ListaGestores } from './gestor/ListaGestores'
+import { GerenciaNotas } from './gestor/GerenciaNotas'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
@@ -24,6 +28,10 @@ function App() {
               <Route path='/home-aluno' element={<HomeAluno />} />
               <Route path='/home-professor' element={<HomeProfessor />} />
               <Route path='/home-gestor' element={<HomeGestor />} />
+              <Route path='/usuarios/alunos' element={<ListaAlunos />} />
+              <Route path='/usuarios/professores' element={<ListaProfessores />} />
+              <Route path='/usuarios/gestores' element={<ListaGestores />} />
+              <Route path='/gestor/gerencia-notas' element={<GerenciaNotas />} />
             </Routes>
           </div>
         </div>
