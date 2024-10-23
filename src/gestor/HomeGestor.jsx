@@ -52,10 +52,10 @@ export function HomeGestor() {
 
     // Lista de matérias com rotas associadas
     const materias = [
-        { nome: 'Matemática', rota: '/materias/matematica' },
-        { nome: 'Português', rota: '/materias/portugues' },
-        { nome: 'Humanas', rota: '/materias/humanas' },
-        { nome: 'Naturais', rota: '/materias/naturais' },
+        { nome: 'Matemática', rota: '/gestor/gerencia-matematica' },
+        { nome: 'Português', rota: '/gestor/gerencia-portugues' },
+        { nome: 'Humanas', rota: '/gestor/gerencia-humanas' },
+        { nome: 'Naturais', rota: '/gestor/gerencia-naturais' },
     ];
 
     // Lista de avisos
