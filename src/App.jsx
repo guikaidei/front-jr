@@ -12,6 +12,10 @@ import { GerenciaMatematica } from './gestor/GerenciaMatematica'
 import { GerenciaPortugues } from './gestor/GerenciaPortugues'
 import { GerenciaHumanas } from './gestor/GerenciaHumanas'
 import { GerenciaNaturais } from './gestor/GerenciaNaturais'
+import { VisualizaMatematica } from './aluno/VisualizaMatematica'
+import { VisualizaHumanas } from './aluno/VisualizaHumanas'
+import { VisualizaNaturais } from './aluno/VisualizaNaturais'
+import { VisualizaPortugues } from './aluno/VisualizaPortugues'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
@@ -40,6 +44,10 @@ function App() {
               <Route path='/gestor/gerencia-portugues' element={<GerenciaPortugues />} />
               <Route path='/gestor/gerencia-humanas' element={<GerenciaHumanas />} />
               <Route path='/gestor/gerencia-naturais' element={<GerenciaNaturais />} />
+              <Route path='/aluno/matematica' element={<VisualizaMatematica />} />
+              <Route path='/aluno/humanas' element={<VisualizaHumanas />} />
+              <Route path='/aluno/naturais' element={<VisualizaNaturais />} />
+              <Route path='/aluno/portugues' element={<VisualizaPortugues />} />
             </Routes>
           </div>
         </div>
