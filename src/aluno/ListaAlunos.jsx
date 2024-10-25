@@ -228,6 +228,7 @@ export function ListaAlunos() {
                         justifyContent: 'center',
                         marginTop: '20px', // Added margin to separate from scroll container
                     }}
+                    onClick={() => navigate('/gestor/cadastra-aluno')}
                 >
                     Novo aluno
                     <AddIcon sx={{ marginLeft: '8px' }} />

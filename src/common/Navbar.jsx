@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Typography, Button, AppBar, Toolbar, IconButton, Box, Menu, MenuList, MenuItem } from '@mui/material';
-import CelebrationIcon from '@mui/icons-material/Celebration';
 import MenuIcon from '@mui/icons-material/Menu';
 import { styled } from '@mui/material/styles';
 
 const StyledAppBar = styled(AppBar)({
-    background: '#ab2325', // Cor de fundo
-    position: 'fixed', // Mantém a barra no topo da tela
-    zIndex: 1100, // Garante que a AppBar fique acima de outros elementos
+    background: '#ab2325',
+    position: 'fixed',
+    zIndex: 1100,
 });
 
 const StyledButton = styled(Button)({
-    fontFamily: 'Open Sans', // Fonte
-    fontWeight: 'bold', // Negrito
-    fontSize: '16px', // Tamanho da fonte
+    fontFamily: 'Open Sans',
+    fontWeight: 'bold',
+    fontSize: '16px',
 });
 
 const logo = '/assets/logo_navbar_transparent.png';
@@ -39,24 +38,33 @@ export function NavBar() {
 
     const logout = () => {
         localStorage.removeItem('jwtToken');
+        localStorage.removeItem('userType');
         navigate('/login');
     };
 
+    const handleLogoClick = () => {
+        const userType = localStorage.getItem('userType'); // Pega o tipo de usuário do localStorage
+        if (userType) {
+            navigate(`/home-${userType}`); // Redireciona para a rota do tipo de usuário
+        } else {
+            navigate('/'); // Caso não haja tipo de usuário, redireciona para a página inicial genérica
+        }
+    };
+
     return (
-        <StyledAppBar position='fixed'> {/* Mudamos para fixed */}
-            <Toolbar sx={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}> {/* Centraliza verticalmente */}
+        <StyledAppBar position='fixed'>
+            <Toolbar sx={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
                 {/* Ícone e título em telas maiores */}
                 <IconButton 
                     size='large' 
                     edge='start' 
                     aria-label='logo' 
-                    sx={{display: { xs: 'none', md: 'flex' }}}
-                    onClick={() => navigate('/')}
+                    sx={{ display: { xs: 'none', md: 'flex' } }}
+                    onClick={handleLogoClick}  // Chama a função handleLogoClick ao clicar no logo
                 >
                     <img src={logo} alt='Logo' style={{ height: '40px', display: { xs: 'flex', md: 'none' } }} />
                 </IconButton>
                 
-
                 {/* Botões em telas maiores */}
                 <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                     <StyledButton color='inherit' onClick={() => navigate('/')}>Home</StyledButton>
@@ -87,7 +95,7 @@ export function NavBar() {
                     edge='start' 
                     aria-label='logo' 
                     sx={{ display: { xs: 'flex', md: 'none' } }}
-                    onClick={() => navigate('/')}
+                    onClick={handleLogoClick}  // Também chama a função handleLogoClick em telas menores
                 >
                     <img src={logo} alt='Logo' style={{ height: '40px', display: { xs: 'flex', md: 'none' } }} />
                 </IconButton>
