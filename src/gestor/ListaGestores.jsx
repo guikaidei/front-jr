@@ -199,6 +199,7 @@ export function ListaGestores() {
                         justifyContent: 'center',
                         marginTop: '20px', // Added margin to separate from scroll container
                     }}
+                    onClick={() => navigate('/gestor/cadastra-gestor')}
                 >
                     Novo gestor
                     <AddIcon sx={{ marginLeft: '8px' }} />
