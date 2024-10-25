@@ -179,6 +179,7 @@ export function ListaProfessores() {
                                 justifyContent: 'center',
                                 marginTop: '20px', // Added margin to separate from scroll container
                             }}
+                            onClick={() => navigate('/gestor/cadastra-professor')}
                         >
                             Novo professor
                             <AddIcon sx={{ marginLeft: '8px' }} />
