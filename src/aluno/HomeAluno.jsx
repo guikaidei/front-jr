@@ -131,6 +131,8 @@ export function HomeAluno() {
         <Box sx={{paddingTop: '80px', fontFamily: 'Open Sans'}}>
             <NavBar/>
 
+            
+
             {/* Seção de Avisos */}
             <Box 
                 sx={{ 
@@ -255,7 +257,7 @@ export function HomeAluno() {
                 sx={{ 
                     backgroundColor: '#ab2325', 
                     width: '100%', 
-                    padding: '20px', 
+                    padding: '40px 20px 20px 40px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     alignItems: 'center',
@@ -296,7 +298,7 @@ export function HomeAluno() {
                 sx={{ 
                     backgroundColor: 'white', 
                     width: '100%', 
-                    padding: '20px', 
+                    padding: '40px 20px 20px 40px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     alignItems: 'center',
@@ -342,7 +344,7 @@ export function HomeAluno() {
             
 
             {/* Seção de Notas */}
-            <Box sx={{ backgroundColor: '#ab2325', width: '100%', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box sx={{ backgroundColor: '#ab2325', width: '100%', padding: '40px 20px 20px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
                     Notas dos Simulados
                 </Typography>
