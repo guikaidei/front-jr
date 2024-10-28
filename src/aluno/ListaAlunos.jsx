@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Typography, Box, List, ListItem, Modal, TextField, MenuItem, Select, FormControl, InputLabel, Button } from '@mui/material';
@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
 import { NavBar } from '../common/navbar';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -26,54 +27,50 @@ const CustomButton = styled(Button)(({ theme }) => ({
 
 export function ListaAlunos() {
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'gestor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
     const [openEditModal, setOpenEditModal] = useState(false);
     const [alunoSelecionado, setAlunoSelecionado] = useState(null);
     const [searchTerm, setSearchTerm] = useState(''); // Filtro por nome
     const [turmaFilter, setTurmaFilter] = useState(''); // Filtro por tipo de turma
+    const [alunos, setAlunos] = useState([]); // Lista de alunos
 
-    // Lista de alunos
-    const alunos = [
-        {
-            nome: 'João',
-            matricula: '123456',
-            email: 'joao@email.com',
-            telefone: '123456789',
-            turma: 'Presencial',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Maria',
-            matricula: '123457',
-            email: 'maria@email.com',
-            telefone: '987654321',
-            turma: 'Presencial',
-            status: 'Ativo'
-        },
-        {
-            nome: 'José',
-            matricula: '123458',
-            email: 'jose@email.com',
-            telefone: '123456780',
-            turma: 'Presencial',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Jorge',
-            matricula: '123459',
-            email: 'jorge@email.com',
-            telefone: '123456781',
-            turma: 'Online',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Kleber',
-            matricula: '123460',
-            email: 'kleber@email.com',
-            telefone: '123456782',
-            turma: 'Online',
-            status: 'Ativo'
+    // Função para buscar alunos da API
+    const fetchAlunos = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/gestor/lista-alunos', {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erro ao buscar a lista de alunos');
+            }
+            const data = await response.json();
+            setAlunos(data['alunos']);
+        } catch (error) {
+            console.error('Erro na requisição:', error);
         }
-    ];
+    };
+
+    useEffect(() => {
+        fetchAlunos(); // Chamada à função para carregar os alunos
+    }, []); // Executa apenas uma vez na montagem do componente
+
+
+    const handleVerNotas = (matricula) => {
+        // Navega para a página de notas com a matrícula como parâmetro na URL
+        navigate(`/gestor/gerencia-notas/${matricula}`);
+    };
 
     // Função para abrir o modal de edição com o aluno selecionado
     const handleOpenEditModal = (aluno) => {
@@ -88,21 +85,69 @@ export function ListaAlunos() {
     };
 
     // Função para salvar as edições
-    const handleSalvarEdicao = () => {
-        // adicionar lógica para salvar as edições
-        setOpenEditModal(false);
+    const handleSalvarEdicao = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/editar-aluno/${alunoSelecionado.matricula}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nome: alunoSelecionado.nome,
+                    matricula: alunoSelecionado.matricula,
+                    trilha: alunoSelecionado.trilha,
+                    turma: alunoSelecionado.turma
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchAlunos();
+                handleCloseEditModal();
+                
+            } else {
+                console.error('Erro ao editar aluno:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
-    const handleDeleteAluno = (aluno) => {
-        // adicionar a lógica para deletar o aluno
-        console.log('Aluno deletado:', aluno);
-        handleCloseEditModal(); // Fechar o modal após a exclusão
+    const handleDeleteAluno = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/deletar-aluno/${alunoSelecionado.matricula}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                await fetchAlunos();
+                handleCloseEditModal();
+            } else {
+                console.error('Erro ao deletar aluno:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
     // Função para filtrar os alunos com base nos termos de pesquisa
     const filtrarAlunos = () => {
+        
+        if (!Array.isArray(alunos)) {
+            console.log('Alunos não é um array');
+            return [];
+        }
         return alunos.filter((aluno) => {
-            const matchNome = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchNome = aluno.nome && aluno.nome.toLowerCase().includes(searchTerm.toLowerCase());
             const matchTurma = turmaFilter === '' || aluno.turma === turmaFilter;
             return matchNome && matchTurma;
         });
@@ -146,8 +191,8 @@ export function ListaAlunos() {
                             label="Tipo de Turma"
                         >
                             <MenuItem value="">Todos</MenuItem>
-                            <MenuItem value="Presencial">Presencial</MenuItem>
-                            <MenuItem value="Online">Online</MenuItem>
+                            <MenuItem value="presencial">Presencial</MenuItem>
+                            <MenuItem value="online">Online</MenuItem>
                         </Select>
                     </FormControl>
                 </Box>
@@ -176,9 +221,9 @@ export function ListaAlunos() {
                     }}
                 >
                     <List sx={{ backgroundColor: '#ffffff', borderRadius: '0px', width: '100%' }}>
-                        {filtrarAlunos().map((aluno, index) => (
+                        {filtrarAlunos().map((aluno) => (
                             <ListItem
-                                key={index}
+                                key={aluno.matricula}
                                 sx={{
                                     marginBottom: '10px',
                                     backgroundColor: 'white',
@@ -191,13 +236,16 @@ export function ListaAlunos() {
                             >
                                 <Box sx={{ flexGrow: 1 }}>
                                     <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                        {aluno.nome}
+                                        {aluno.nome.charAt(0).toUpperCase() + aluno.nome.slice(1)}
                                     </Typography>
                                     <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                        Email: {aluno.email}
+                                        Matricula: {aluno.matricula}
                                     </Typography>
                                     <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                        Turma: {aluno.turma}
+                                        Turma: {aluno.turma.charAt(0).toUpperCase() + aluno.turma.slice(1)}
+                                    </Typography>
+                                    <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                        Trilha: {aluno.trilha.charAt(0).toUpperCase() + aluno.trilha.slice(1)}
                                     </Typography>
                                 </Box>
                                 <Button
@@ -211,6 +259,7 @@ export function ListaAlunos() {
                                 <Button
                                     variant="contained"
                                     sx={{ backgroundColor: '#ab2325', color: 'white', marginLeft: '10px', fontFamily: 'Open Sans' }}
+                                    onClick={() => handleVerNotas(aluno.matricula)}
                                 >
                                     Notas
                                 </Button>
@@ -249,106 +298,65 @@ export function ListaAlunos() {
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
                         width: 400,
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        padding: '20px',
+                        bgcolor: 'background.paper',
                         boxShadow: 24,
+                        p: 4,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        fontFamily: 'Open Sans',
                     }}
                 >
+                    <Typography id="modal-editar-aluno-titulo" variant="h6" component="h2" sx={{fontWeight: 'bold', color:'black', fontFamily:'Open sans'}}>
+                        Editar Aluno
+                    </Typography>
+
                     {alunoSelecionado && (
-                        <div>
-                            <Typography id="modal-editar-aluno-titulo" variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans', fontWeight: 'bold' }}>
-                                Editar Aluno
-                            </Typography>
-                            {/* Editar Nome */}
+                        <>
                             <TextField
                                 label="Nome"
-                                fullWidth
-                                margin="normal"
                                 value={alunoSelecionado.nome}
-                                onChange={(e) =>
-                                    setAlunoSelecionado({ ...alunoSelecionado, nome: e.target.value })
-                                }
+                                onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, nome: e.target.value })}
                             />
-                            {/* Editar Email */}
                             <TextField
-                                label="Email"
-                                fullWidth
-                                margin="normal"
-                                value={alunoSelecionado.email}
-                                onChange={(e) =>
-                                    setAlunoSelecionado({ ...alunoSelecionado, email: e.target.value })
-                                }
+                                label="Matricula"
+                                value={alunoSelecionado.matricula}
+                                disabled // matrícula não deve ser editável
                             />
-                            {/* Editar Telefone */}
-                            <TextField
-                                label="Telefone"
-                                fullWidth
-                                margin="normal"
-                                value={alunoSelecionado.telefone}
-                                onChange={(e) =>
-                                    setAlunoSelecionado({ ...alunoSelecionado, telefone: e.target.value })
-                                }
-                            />
-                            {/* Editar Tipo de Turma */}
-                            <FormControl fullWidth margin="normal">
+                            <FormControl>
+                                <InputLabel>Trilha</InputLabel>
+                                <Select
+                                    value={alunoSelecionado.trilha}
+                                    onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, trilha: e.target.value })}
+                                >
+                                    <MenuItem value="humanas">Humanas</MenuItem>
+                                    <MenuItem value="naturais">Naturais</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl>
                                 <InputLabel>Tipo de Turma</InputLabel>
                                 <Select
                                     value={alunoSelecionado.turma}
-                                    onChange={(e) =>
-                                        setAlunoSelecionado({ ...alunoSelecionado, turma: e.target.value })
-                                    }
-                                    label="Tipo de Turma"
+                                    onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, turma: e.target.value })}
                                 >
-                                    <MenuItem value="Presencial">Presencial</MenuItem>
-                                    <MenuItem value="Online">Online</MenuItem>
-                                </Select>
-                            </FormControl>
-                            {/* Editar Status */}
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>Status</InputLabel>
-                                <Select
-                                    value={alunoSelecionado.status}
-                                    onChange={(e) =>
-                                        setAlunoSelecionado({ ...alunoSelecionado, status: e.target.value })
-                                    }
-                                    label="Status"
-                                >
-                                    <MenuItem value="Ativo">Ativo</MenuItem>
-                                    <MenuItem value="Inativo">Inativo</MenuItem>
+                                    <MenuItem value="presencial">Presencial</MenuItem>
+                                    <MenuItem value="online">Online</MenuItem>
                                 </Select>
                             </FormControl>
 
-                            {/* Botões para Salvar, Deletar e Fechar */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
-                                {/* Botão Salvar */}
-                                <Button
-                                    onClick={handleSalvarEdicao}
-                                    variant="contained"
-                                    sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}
-                                >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                                <Button onClick={handleSalvarEdicao} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
                                     Salvar
                                 </Button>
-
-                                {/* Botão Deletar (vermelho) */}
-                                <Button
-                                    onClick={() => handleDeleteAluno(alunoSelecionado)} // Função para deletar o aluno
-                                    variant="contained"
-                                    sx={{ backgroundColor: 'red', color: 'white', fontFamily: 'Open Sans' }}
-                                >
-                                    Deletar
+                                <Button onClick={() => handleDeleteAluno(alunoSelecionado)} variant="contained" sx={{ backgroundColor: '#ab2325', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Excluir
                                 </Button>
-
-                                {/* Botão Fechar */}
-                                <Button
-                                    onClick={handleCloseEditModal}
-                                    variant="contained"
-                                    sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}
-                                >
+                                <Button onClick={handleCloseEditModal} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
                                     Fechar
                                 </Button>
+                                
                             </Box>
-                        </div>
+                        </>
                     )}
                 </Box>
             </Modal>

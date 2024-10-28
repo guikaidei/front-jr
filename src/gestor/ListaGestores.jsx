@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Typography, Box, List, ListItem, Modal, TextField, MenuItem, Select, FormControl, InputLabel, Button } from '@mui/material';
@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
 import { NavBar } from '../common/navbar';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -26,43 +27,46 @@ const CustomButton = styled(Button)(({ theme }) => ({
 
 export function ListaGestores() {
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'gestor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
+
     const [openEditModal, setOpenEditModal] = useState(false);
     const [gestorSelecionado, setGestorSelecionado] = useState(null);
     const [searchTerm, setSearchTerm] = useState(''); // Filtro por nome
+    const [gestores, setGestores] = useState([]);
 
-    // Lista de gestores
-    const gestores = [
-        {
-            nome: 'João',
-            email: 'joao@email.com',
-            telefone: '123456789',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Maria',
-            email: 'maria@email.com',
-            telefone: '987654321',
-            status: 'Ativo'
-        },
-        {
-            nome: 'José',
-            email: 'jose@email.com',
-            telefone: '123456780',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Jorge',
-            email: 'jorge@email.com',
-            telefone: '123456781',
-            status: 'Ativo'
-        },
-        {
-            nome: 'Kleber',
-            email: 'kleber@email.com',
-            telefone: '123456782',
-            status: 'Ativo'
+
+    // Função para buscar alunos da API
+    const fetchGestores = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/gestor/lista-gestores', {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erro ao buscar a lista de gestor');
+            }
+            const data = await response.json();
+            setGestores(data['gestores']);
+        } catch (error) {
+            console.error('Erro na requisição:', error);
         }
-    ];
+    };
+
+    useEffect(() => {
+        fetchGestores();
+    }, []); 
+
 
     // Função para abrir o modal de edição com o gestor selecionado
     const handleOpenEditModal = (gestor) => {
@@ -77,15 +81,56 @@ export function ListaGestores() {
     };
 
     // Função para salvar as edições
-    const handleSalvarEdicao = () => {
-        // adicionar lógica para salvar as edições
-        setOpenEditModal(false);
+    const handleSalvarEdicao = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/editar-gestor/${gestorSelecionado.matricula}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nome: gestorSelecionado.nome,
+                    matricula: gestorSelecionado.matricula,
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchGestores();
+                handleCloseEditModal();
+                
+            } else {
+                console.error('Erro ao editar gestor:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
-    const handleDeleteGestor = (gestor) => {
-        // adicionar a lógica para deletar o gestor
-        console.log('Gestor deletado:', gestor);
-        handleCloseEditModal(); // Fechar o modal após a exclusão
+    const handleDeleteGestor = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/deletar-gestor/${gestorSelecionado.matricula}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                await fetchGestores();
+                handleCloseEditModal();
+            } else {
+                console.error('Erro ao deletar gestor:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
     // Função para filtrar os gestores com base nos termos de pesquisa
@@ -170,10 +215,7 @@ export function ListaGestores() {
                                         {gestor.nome}
                                     </Typography>
                                     <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                        Email: {gestor.email}
-                                    </Typography>
-                                    <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans' }}>
-                                        Status: {gestor.status}
+                                        Matrícula: {gestor.matricula}
                                     </Typography>
                                 </Box>
                                 <Button
@@ -241,41 +283,18 @@ export function ListaGestores() {
                                     setGestorSelecionado({ ...gestorSelecionado, nome: e.target.value })
                                 }
                             />
-                            {/* Editar Email */}
+                            {/* Editar Matricula */}
                             <TextField
-                                label="Email"
+                                label="Matrícula"
                                 fullWidth
                                 margin="normal"
-                                value={gestorSelecionado.email}
+                                value={gestorSelecionado.matricula}
                                 onChange={(e) =>
-                                    setGestorSelecionado({ ...gestorSelecionado, email: e.target.value })
+                                    setGestorSelecionado({ ...gestorSelecionado, matricula: e.target.value })
                                 }
-                            />
-                            {/* Editar Telefone */}
-                            <TextField
-                                label="Telefone"
-                                fullWidth
-                                margin="normal"
-                                value={gestorSelecionado.telefone}
-                                onChange={(e) =>
-                                    setGestorSelecionado({ ...gestorSelecionado, telefone: e.target.value })
-                                }
+                                disabled
                             />
                             
-                            {/* Editar Status */}
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>Status</InputLabel>
-                                <Select
-                                    value={gestorSelecionado.status}
-                                    onChange={(e) =>
-                                        setGestorSelecionado({ ...gestorSelecionado, status: e.target.value })
-                                    }
-                                    label="Status"
-                                >
-                                    <MenuItem value="Ativo">Ativo</MenuItem>
-                                    <MenuItem value="Inativo">Inativo</MenuItem>
-                                </Select>
-                            </FormControl>
 
                             {/* Botões para Salvar, Deletar e Fechar */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
@@ -292,9 +311,9 @@ export function ListaGestores() {
                                 <Button
                                     onClick={() => handleDeleteGestor(gestorSelecionado)} // Função para deletar o gestor
                                     variant="contained"
-                                    sx={{ backgroundColor: 'red', color: 'white', fontFamily: 'Open Sans' }}
+                                    sx={{ backgroundColor: '#ab2325', color: 'white', fontFamily: 'Open Sans' }}
                                 >
-                                    Deletar
+                                    Excluir
                                 </Button>
 
                                 {/* Botão Fechar */}

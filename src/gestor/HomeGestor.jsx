@@ -55,6 +55,7 @@ export function HomeGestor() {
     const [novoAviso, setNovoAviso] = useState({ titulo: '', conteudo: '' }); // Novo aviso
     const [openEditModal, setOpenEditModal] = useState(false);
     const [avisoSelecionado, setAvisoSelecionado] = useState(null);
+    const [avisos, setAvisos] = useState([]);  // Estado para armazenar avisos da API
     const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
 
     useEffect(() => {
@@ -66,98 +67,91 @@ export function HomeGestor() {
 
     // Lista de matérias com rotas associadas
     const materias = [
-        { nome: 'Matemática', rota: '/gestor/gerencia-matematica' },
-        { nome: 'Português', rota: '/gestor/gerencia-portugues' },
-        { nome: 'Humanas', rota: '/gestor/gerencia-humanas' },
-        { nome: 'Naturais', rota: '/gestor/gerencia-naturais' },
+        { nome: 'Matemática', rota: 'matematica' },
+        { nome: 'Português', rota: 'portugues' },
+        { nome: 'Humanas', rota: 'humanas' },
+        { nome: 'Naturais', rota: 'naturais' },
     ];
 
-    // Lista de avisos
-    const avisos = [
-        {
-            titulo: 'Simulado amanhã',
-            conteudo: 'O simulado será amanhã às 9:00.',
-            data: '2021-10-10',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        {
-            titulo: 'Notas atualizadas',
-            conteudo: 'Notas do último simulado foram atualizadas.',
-            data: '2021-10-15',
-            materia: 'Geral',
-            autor: 'João'
-        },
-        
-    ];
+    const parseDate = (dateStr) => {
+        const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
+        return new Date(`${ano}-${mes}-${dia}`); // Retorna um objeto Date no formato ISO
+    };
 
-    // Função para navegação ao clicar no botão de matéria
-    const handleMateriaClick = (rota) => {
-        navigate(rota);
+    // Função para buscar avisos da API
+    const fetchAvisos = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/home-gestor', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+                    'Aceess-Control-Allow-Credentials': 'true',
+                    'Acess-Control-Max-Age': '86400',
+                    
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const avisosOrdenados = data.avisos.sort((a, b) => parseDate(b.data) - parseDate(a.data));
+            
+                setAvisos(avisosOrdenados);  // Armazena os avisos ordenados no estado
+            } else {
+                console.error('Erro ao buscar avisos:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchAvisos();  // Chamada à função para carregar os avisos
+    }, []); // Executa apenas uma vez na montagem do componente
+
+    const handleMateriaClick = (materia) => {
+        // Navega para a página de notas com a matrícula como parâmetro na URL
+        navigate(`/gestor/gerencia-materia/${materia}`);
     };
 
     const handleNovoAvisoOpen = () => {
         setModalNovoAviso(true);
     };
 
+    const handleCriarNovoAviso = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/criar-aviso', {
+                method: 'POST',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    titulo: novoAviso.titulo,
+                    conteudo: novoAviso.conteudo,
+                    materia: 'geral'
+                })
+            });
+    
+            if (response.ok) {
+                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
+                fetchAvisos();
+                handleNovoAvisoClose(); // Fecha o modal
+            } else {
+                console.error('Erro ao criar aviso:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
     const handleNovoAvisoClose = () => {
         setModalNovoAviso(false);
+        setNovoAviso({ titulo: '', conteudo: '' }); // Limpa os campos de novo aviso
     };
 
     const handleNovoAvisoChange = (field, value) => {
@@ -177,10 +171,59 @@ export function HomeGestor() {
     };
 
     // Função para salvar as edições
-    const handleSalvarEdicao = () => {
-        // Aqui você pode adicionar lógica para salvar as edições, como enviar os dados para um backend
-        setOpenEditModal(false);
+    const handleSalvarEdicao = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/editar-aviso/${avisoSelecionado._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    titulo: avisoSelecionado.titulo,
+                    conteudo: avisoSelecionado.conteudo
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchAvisos();
+                handleCloseEditModal();
+                
+            } else {
+                console.error('Erro ao editar aviso:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
+
+    const handleDeletarAviso = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/deletar-aviso/${avisoSelecionado._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                // Remover o aviso da lista localmente
+                setAvisos(avisos.filter((aviso) => aviso._id !== avisoSelecionado._id));
+                handleCloseEditModal();
+            } else {
+                console.error('Erro ao deletar aviso:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+    
 
     return (
 
@@ -328,72 +371,65 @@ export function HomeGestor() {
                     Avisos Gestores
                 </Typography>
                 
-                {/* Container for scrollable list */}
-                <Box 
-                    sx={{
-                        width: '100%',
-                        maxWidth: '600px',
-                        height: '400px', // Fixed height for scroll
-                        overflow: 'auto', // Enable scroll
-                        // Custom scrollbar styling
-                        '&::-webkit-scrollbar': {
-                            width: '8px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            background: '#f1f1f1',
-                            borderRadius: '4px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: '#015495',
-                            borderRadius: '4px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: '#013d6b',
-                        },
-                    }}
-                >
-                    <List sx={{ 
-                        backgroundColor: '#ffffff', 
-                        borderRadius: '0px', 
-                        width: '100%',
-                        paddingRight: '10px', // Add padding to prevent content from touching scrollbar
-                    }}>
-                        {avisos.map((aviso, index) => (
-                            <ListItem
-                                key={index}
-                                sx={{
-                                    marginBottom: '10px',
-                                    backgroundColor: 'white',
-                                    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
-                                    padding: '15px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                }}
-                            >
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                        {aviso.titulo}
-                                    </Typography>
-                                    <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                        Matéria: {aviso.materia}
-                                    </Typography>
-                                    <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
-                                        {format(parseISO(aviso.data), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                                    </Typography>
-                                </Box>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<EditIcon />}
-                                    onClick={() => handleOpenEditModal(aviso)}
-                                    sx={{ backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                {/* Verificação se a lista de avisos está vazia */}
+                {avisos.length === 0 ? (
+                    <Typography sx={{ color: '#666', fontFamily: 'Open Sans', fontSize: '18px', marginTop: '20px' }}>
+                        Nenhum aviso encontrado
+                    </Typography>
+                ) : (
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            maxWidth: '600px',
+                            height: '400px', // Fixed height for scroll
+                            overflow: 'auto', // Enable scroll
+                            '&::-webkit-scrollbar': { width: '8px' },
+                            '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },
+                            '&::-webkit-scrollbar-thumb': { background: '#015495', borderRadius: '4px' },
+                            '&::-webkit-scrollbar-thumb:hover': { background: '#013d6b' },
+                        }}
+                    >
+                        <List sx={{ backgroundColor: '#ffffff', borderRadius: '0px', width: '100%', paddingRight: '10px' }}>
+                            {avisos.map((aviso, index) => (
+                                <ListItem
+                                    key={index}
+                                    sx={{
+                                        marginBottom: '10px',
+                                        backgroundColor: 'white',
+                                        boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+                                        padding: '15px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
                                 >
-                                    Editar
-                                </Button>
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
+                                            {aviso.titulo}
+                                        </Typography>
+                                        <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                            Matéria: {aviso.materia.charAt(0).toUpperCase() + aviso.materia.slice(1)}
+                                        </Typography>
+                                        <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                            Autor: {aviso.autor}
+                                        </Typography>
+                                        <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
+                                            {aviso.data}
+                                        </Typography>
+                                    </Box>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<EditIcon />}
+                                        onClick={() => handleOpenEditModal(aviso)}
+                                        sx={{ backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                                    >
+                                        Editar
+                                    </Button>
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Box>
+                )}
 
                 <CustomButton
                     variant="contained"
@@ -403,7 +439,7 @@ export function HomeGestor() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginTop: '20px', // Added margin to separate from scroll container
+                        marginTop: '20px',
                     }}
                     onClick={handleNovoAvisoOpen}
                 >
@@ -457,27 +493,18 @@ export function HomeGestor() {
                                     setAvisoSelecionado({ ...avisoSelecionado, conteudo: e.target.value })
                                 }
                             />
-                            <Button
-                                onClick={handleSalvarEdicao}
-                                variant="contained"
-                                sx={{ mt: 3, backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}
-                            >
-                                Salvar
-                            </Button>
-                            <Button
-                                onClick={handleSalvarEdicao}
-                                variant="contained"
-                                sx={{ mt: 3, backgroundColor: 'red', color: 'white', fontFamily: 'Open Sans', marginLeft: '10px', marginRight: '10px' }}
-                            >
-                                Deletar
-                            </Button>
-                            <Button
-                                onClick={handleCloseEditModal}
-                                variant="contained"
-                                sx={{ mt: 3, backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}
-                            >
-                                fechar
-                            </Button>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                                <Button onClick={handleSalvarEdicao} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Salvar
+                                </Button>
+                                <Button onClick={handleDeletarAviso} variant="contained" sx={{ backgroundColor: '#ab2325', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Excluir
+                                </Button>
+                                <Button onClick={handleCloseEditModal} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Fechar
+                                </Button>
+                                
+                            </Box>
                         </div>
                     )}
                 </Box>
@@ -523,7 +550,7 @@ export function HomeGestor() {
                         onChange={(e) => handleNovoAvisoChange('conteudo', e.target.value)}
                     />
                     <Button
-                        onClick={handleNovoAvisoClose}
+                        onClick={handleCriarNovoAviso}
                         variant="contained"
                         sx={{ mt: 3, backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans', marginRight: '10px' }}
                     >

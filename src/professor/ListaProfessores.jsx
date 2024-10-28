@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Typography, Box, List, ListItem, Button, Modal, TextField, Select, MenuItem, InputLabel, FormControl, Checkbox, ListItemText, OutlinedInput } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -6,6 +6,8 @@ import AddIcon from '@mui/icons-material/Add';
 import { NavBar } from '../common/navbar';
 import { styled } from '@mui/material/styles';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import { AuthContext } from '../context/AuthContext';
+
 
 
 
@@ -26,20 +28,49 @@ const CustomButton = styled(Button)(({ theme }) => ({
 
 export function ListaProfessores() {
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'gestor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
+    
     const [modalNovoProfessor, setModalNovoProfessor] = useState(false);
     const [openEditModal, setOpenEditModal] = useState(false);
     const [professorSelecionado, setProfessorSelecionado] = useState(null);
     const [novoProfessor, setNovoProfessor] = useState({ nome: '', email: '', turma: '', status: '', materias: [] });
     const [searchTerm, setSearchTerm] = useState(''); // Filtro por nome
     const [filtroMateria, setFiltroMateria] = useState('');
-
-    const professores = [
-        { nome: 'Carlos', email: 'carlos@email.com', telefone: '123456789', materias: ['Matemática', 'Naturais'], status: 'Ativo' },
-        { nome: 'Ana', email: 'ana@email.com', telefone: '987654321', materias: ['Português', 'Humanas'], status: 'Inativo' },
-        { nome: 'Luiza', email: 'luiza@email.com', telefone: '543216789', materias: ['Naturais'], status: 'Ativo' },
-    ];
+    const [professores, setProfessores] = useState([]); // Lista de professores
 
     const materiasDisponiveis = ['Matemática', 'Português', 'Humanas', 'Naturais'];
+
+    // Função para buscar professores da API
+    const fetchProfesores = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/gestor/lista-professores', {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erro ao buscar a lista de professores');
+            }
+            const data = await response.json();
+            setProfessores(data['professores']);
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchProfesores();
+    }, []); 
 
     // Função para abrir o modal de novo professor
     const handleNovoProfessorOpen = () => setModalNovoProfessor(true);
@@ -58,9 +89,58 @@ export function ListaProfessores() {
     };
 
     // Função para salvar edições no professor
-    const handleSalvarEdicao = () => {
-        // adicionar lógica para salvar as edições no backend
-        setOpenEditModal(false);
+    const handleSalvarEdicao = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/editar-professor/${professorSelecionado.matricula}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nome: professorSelecionado.nome,
+                    matricula: professorSelecionado.matricula,
+                    materias: professorSelecionado.materias
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchProfesores();
+                handleCloseEditModal();
+                
+            } else {
+                console.error('Erro ao editar professor:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    // Função para deletar um professor
+    const handleDelete = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/deletar-professor/${professorSelecionado.matricula}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                await fetchProfesores();
+                handleCloseEditModal();
+            } else {
+                console.error('Erro ao deletar professor:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
     // Função para aplicar os filtros
@@ -145,14 +225,12 @@ export function ListaProfessores() {
                                             {professor.nome}
                                         </Typography>
                                         <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                            Email: {professor.email}
+                                            Matrícula: {professor.matricula}
                                         </Typography>
                                         <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans'}}>
                                             Matérias: {professor.materias.join(', ')}
                                         </Typography>
-                                        <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans' }}>
-                                            Status: {professor.status}
-                                        </Typography>
+
                                     </Box>
                                     <Button
                                         variant="contained"
@@ -196,25 +274,7 @@ export function ListaProfessores() {
                                 Editar Professor
                             </Typography>
                             <TextField label="Nome" fullWidth margin="normal" value={professorSelecionado.nome} onChange={(e) => setProfessorSelecionado({ ...professorSelecionado, nome: e.target.value })} />
-                            <TextField label="Email" fullWidth margin="normal" value={professorSelecionado.email} onChange={(e) => setProfessorSelecionado({ ...professorSelecionado, email: e.target.value })} />
-
-                            {/* Select para turma */}
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>Turma</InputLabel>
-                                <Select value={professorSelecionado.turma} onChange={(e) => setProfessorSelecionado({ ...professorSelecionado, turma: e.target.value })}>
-                                    <MenuItem value="Presencial">Presencial</MenuItem>
-                                    <MenuItem value="Online">Online</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            {/* Select para status */}
-                            <FormControl fullWidth margin="normal">
-                                <InputLabel>Status</InputLabel>
-                                <Select value={professorSelecionado.status} onChange={(e) => setProfessorSelecionado({ ...professorSelecionado, status: e.target.value })}>
-                                    <MenuItem value="Ativo">Ativo</MenuItem>
-                                    <MenuItem value="Inativo">Inativo</MenuItem>
-                                </Select>
-                            </FormControl>
+                            <TextField disabled label="Matrícula" fullWidth margin="normal" value={professorSelecionado.matricula} onChange={(e) => setProfessorSelecionado({ ...professorSelecionado, matricula: e.target.value })} />
 
                             {/* Select múltiplo para matérias */}
                             <FormControl fullWidth margin="normal">
@@ -235,70 +295,23 @@ export function ListaProfessores() {
                                 </Select>
                             </FormControl>
 
-                            <Button onClick={handleSalvarEdicao} variant="contained" sx={{ mt: 3, backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
-                                Salvar
-                            </Button>
-                            <Button onClick={handleCloseEditModal} variant="contained" sx={{ mt: 3, backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans', marginLeft: '10px' }}>
-                                Fechar
-                            </Button>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                                <Button onClick={handleSalvarEdicao} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Salvar
+                                </Button>
+                                <Button onClick={() => handleDelete(professorSelecionado)} variant="contained" sx={{ backgroundColor: '#ab2325', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Excluir
+                                </Button>
+                                <Button onClick={handleCloseEditModal} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Fechar
+                                </Button>
+                            </Box>
                         </div>
                     )}
                 </Box>
             </Modal>
 
             
-
-            {/* Modal para adicionar novo professor */}
-            <Modal open={modalNovoProfessor} onClose={handleNovoProfessorClose}>
-                <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: 24 }}>
-                    <Typography variant="h6" component="h2" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                        Adicionar novo professor
-                    </Typography>
-                    <TextField label="Nome" fullWidth margin="normal" value={novoProfessor.nome} onChange={(e) => setNovoProfessor({ ...novoProfessor, nome: e.target.value })} />
-                    <TextField label="Email" fullWidth margin="normal" value={novoProfessor.email} onChange={(e) => setNovoProfessor({ ...novoProfessor, email: e.target.value })} />
-
-                    {/* Select para turma */}
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>Turma</InputLabel>
-                        <Select value={novoProfessor.turma} onChange={(e) => setNovoProfessor({ ...novoProfessor, turma: e.target.value })}>
-                            <MenuItem value="Presencial">Presencial</MenuItem>
-                            <MenuItem value="Online">Online</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Select para status */}
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>Status</InputLabel>
-                        <Select value={novoProfessor.status} onChange={(e) => setNovoProfessor({ ...novoProfessor, status: e.target.value })}>
-                            <MenuItem value="Ativo">Ativo</MenuItem>
-                            <MenuItem value="Inativo">Inativo</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Select múltiplo para matérias */}
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel>Matérias</InputLabel>
-                        <Select
-                            multiple
-                            value={novoProfessor.materias}
-                            onChange={(e) => setNovoProfessor({ ...novoProfessor, materias: e.target.value })}
-                            input={<OutlinedInput label="Matérias" />}
-                            renderValue={(selected) => selected.join(', ')}
-                        >
-                            {materiasDisponiveis.map((materia) => (
-                                <MenuItem key={materia} value={materia}>
-                                    <Checkbox checked={novoProfessor.materias.includes(materia)} />
-                                    <ListItemText primary={materia} />
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <Button variant="contained" color="primary" sx={{ fontFamily: 'Open Sans', marginTop: '20px' }} onClick={() => setModalNovoProfessor(false)}>
-                        Adicionar
-                    </Button>
-                </Box>
-            </Modal>
         </Box>
     );
 }
