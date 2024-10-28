@@ -21,6 +21,7 @@ import { GerenciaHumanasProf } from './professor/GerenciaHumanasProf'
 import { GerenciaMatematicaProf } from './professor/GerenciaMatematicaProf'
 import { GerenciaNaturaisProf } from './professor/GerenciaNaturaisProf'
 import { GerenciaPortuguesProf } from './professor/GerenciaPortuguesProf'
+import { GerenciaMateriaProf } from './professor/GerenciaMateriaProf'
 import { CadastraAluno } from './gestor/CadastraAluno'
 import { CadastraProfessor } from './gestor/CadastraProfessor'
 import { CadastraGestor } from './gestor/CadastraGestor'
@@ -63,10 +64,7 @@ function App() {
                 <Route path='/aluno/humanas' element={<VisualizaHumanas />} />
                 <Route path='/aluno/naturais' element={<VisualizaNaturais />} />
                 <Route path='/aluno/portugues' element={<VisualizaPortugues />} />
-                <Route path='/professor/humanas' element={<GerenciaHumanasProf />} />
-                <Route path='/professor/matematica' element={<GerenciaMatematicaProf />} />
-                <Route path='/professor/naturais' element={<GerenciaNaturaisProf />} />
-                <Route path='/professor/portugues' element={<GerenciaPortuguesProf />} />
+                <Route path='/professor/:materia' element={<GerenciaMateriaProf />} />
                 <Route path='/gestor/cadastra-aluno' element={<CadastraAluno />} />
                 <Route path='/gestor/cadastra-professor' element={<CadastraProfessor />} />
                 <Route path='/gestor/cadastra-gestor' element={<CadastraGestor />} />

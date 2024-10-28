@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { List, ListItem, ListItemText, Typography, Box, Grid, Modal, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { NavBar } from '../common/navbar';
 import { styled } from '@mui/material/styles';
 import { format, parseISO } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
+import { AuthContext } from '../context/AuthContext';
+
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -23,6 +25,15 @@ const CustomButton = styled(Button)(({ theme }) => ({
 
 export function HomeProfessor() {
     const navigate = useNavigate();
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'professor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
+
 
     // Lista de matérias com rotas associadas
     const materias = [
@@ -32,20 +43,55 @@ export function HomeProfessor() {
         { nome: 'Naturais', rota: '/professor/naturais' },
     ];
 
-    const materiasProfessor = [
-        'Matemática',
-        'Naturais',
-        'Português',
-        'Humanas',
-    ];
+    const materiasFormatadas = {
+        'matematica': 'Matemática',
+        'portugues': 'Português',
+        'humanas': 'Humanas',
+        'naturais': 'Naturais',
+    }
+
+
+    const [materiasProfessor, setMateriasProfessor] = useState([]);  // Estado para armazenar os avisos
+
+    // Função para buscar avisos da API
+    const fetchMaterias = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/professor/listar-materias', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+                    'Aceess-Control-Allow-Credentials': 'true',
+                    'Acess-Control-Max-Age': '86400',
+                    
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+            
+                setMateriasProfessor(data.materias); 
+            } else {
+                console.error('Erro ao buscar materias:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchMaterias();  // Chamada à função para carregar os avisos
+    }, []); // Executa apenas uma vez na montagem do componente
 
     // Filter materias to only show the ones in materiasProfessor
     const materiasFiltradas = materias.filter(materia => 
         materiasProfessor.includes(materia.nome)
     );
 
-    const handleMateriaClick = (rota) => {
-        navigate(rota);
+    const handleMateriaClick = (materia) => {
+        navigate('/professor/' + materia);
     };
 
     return (
@@ -69,7 +115,7 @@ export function HomeProfessor() {
                     Matérias
                 </Typography>
                 <Grid container spacing={2} justifyContent="center" sx={{ maxWidth: '800px' }}>
-                    {materiasFiltradas.map((materia, index) => (
+                    {materiasProfessor.map((materia, index) => (
                         <Grid item xs={12} sm={6} md={4} key={index}>
                             <Paper 
                                 elevation={3} 
@@ -83,10 +129,10 @@ export function HomeProfessor() {
                                         backgroundColor: '#f5f5f5'
                                     }
                                 }}
-                                onClick={() => handleMateriaClick(materia.rota)}
+                                onClick={() => handleMateriaClick(materia)}
                             >
                                 <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                    {materia.nome}
+                                    {materiasFormatadas[materia]}
                                 </Typography>
                             </Paper>
                         </Grid>
