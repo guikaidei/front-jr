@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -9,6 +9,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { NavBar } from '../common/navbar';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -28,6 +29,15 @@ const CustomButton = styled(Button)(({ theme }) => ({
 export function CadastraGestor() {
 
     const navigate = useNavigate();
+
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'gestor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
 
     const [formData, setFormData] = useState({
         nome: '',

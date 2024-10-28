@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Box, Button, Modal, TextField, Table, TableBody, TableCell, TableHead, TableRow, IconButton } from '@mui/material';
 import { NavBar } from '../common/navbar';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { styled } from '@mui/material/styles';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -25,65 +25,150 @@ const CustomButton = styled(Button)(({ theme }) => ({
 
 export function GerenciaNotas() {
     const navigate = useNavigate();
-    const [simulados, setSimulados] = useState([
-        { id: 1, nome: 'Simulado 1', nota: 7.5 },
-        { id: 2, nome: 'Simulado 2', nota: 8.3 },
-        { id: 3, nome: 'Simulado 3', nota: 9.1 },
-        { id: 4, nome: 'Simulado 4', nota: 9.0 },
-        { id: 5, nome: 'Simulado 5', nota: 7.2 },
-        { id: 6, nome: 'Simulado 6', nota: 8.7 },
-        { id: 7, nome: 'Simulado 7', nota: 9.4 },
-        { id: 8, nome: 'Simulado 8', nota: 8.1 },
-        // Adicione mais simulados conforme necessário para testar o scroll
-    ]);
+    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+
+    useEffect(() => {
+        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
+        if (!isAuthenticated || user.tipo !== 'gestor') {
+        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+        }
+    }, [isAuthenticated, user, navigate]);
+
+    const { matricula } = useParams();
+    const [simulados, setSimulados] = useState([]);
+    const [simuladoSelecionado, setSimuladoSelecionado] = useState(null);
     const [modalAberto, setModalAberto] = useState(false);
-    const [editandoSimulado, setEditandoSimulado] = useState(null);
-    const [novoSimulado, setNovoSimulado] = useState({ nome: '', nota: '' });
+
+    const fetchSimulados = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/listar_notas/${matricula}`, {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Erro ao buscar notas');
+            }
+            const data = await response.json();
+            setSimulados(data['notas']);
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchSimulados();
+    }, []);
+    
 
     // Funções para abrir/fechar modais
-    const handleAbrirModal = () => setModalAberto(true);
+    const handleAbrirModal = () => {
+        setSimuladoSelecionado(null); // Certifica-se de que não há simulado selecionado
+        setNovoSimulado({ nome: '', nota: '' }); // Limpa o estado do novo simulado
+        setModalAberto(true);
+    };
+    
     const handleFecharModal = () => {
         setModalAberto(false);
-        setEditandoSimulado(null);
         setNovoSimulado({ nome: '', nota: '' });
     };
 
     // Função para adicionar ou editar simulado
-    const handleSalvarSimulado = () => {
-        if (editandoSimulado) {
-            // Editar simulado existente
-            setSimulados((prevSimulados) =>
-                prevSimulados.map((simulado) =>
-                    simulado.id === editandoSimulado.id ? { ...editandoSimulado, ...novoSimulado } : simulado
-                )
-            );
-        } else {
-            // Adicionar novo simulado
-            setSimulados((prevSimulados) => [
-                ...prevSimulados,
-                { id: prevSimulados.length + 1, ...novoSimulado },
-            ]);
+    const handleSalvarEdicao = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/${matricula}/editar-nota/${simuladoSelecionado.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nota: simuladoSelecionado.nota,
+                    simulado: simuladoSelecionado.simulado
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchSimulados();
+                handleFecharModal();
+                
+            } else {
+                console.error('Erro ao editar simulado:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
         }
-        handleFecharModal();
     };
 
-    // Função para editar um simulado
-    const handleEditarSimulado = (simulado) => {
-        setEditandoSimulado(simulado);
-        setNovoSimulado(simulado);
-        handleAbrirModal();
+    const handleDelete = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/${matricula}/deletar-nota/${simuladoSelecionado.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                await fetchSimulados();
+                handleFecharModal();
+            } else {
+                console.error('Erro ao deletar nota:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
-    // Função para excluir um simulado
-    const handleExcluirSimulado = (id) => {
-        setSimulados(simulados.filter((simulado) => simulado.id !== id));
+    
+    const handleOpenEditModal = (simulado) => {
+        setSimuladoSelecionado({ ...simulado }); // Clone para edição
+        setModalAberto(true);
+    };
+
+    const [novoSimulado, setNovoSimulado] = useState({ nome: '', nota: '' });
+
+    const handleSalvarNovoSimulado = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/gestor/notas/${matricula}`, {
+                method: 'POST',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    simulado: novoSimulado.nome,
+                    nota: novoSimulado.nota,
+                }),
+            });
+    
+            if (response.ok) {
+                await fetchSimulados(); // Atualizar a lista de simulados após a criação
+                handleFecharModal(); // Fechar o modal após salvar
+            } else {
+                console.error('Erro ao criar simulado:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
     };
 
     return (
         <Box sx={{ fontFamily: 'Open Sans' }}>
             <NavBar />
 
-            <Button onClick={() => {navigate('/home-gestor')}}>
+            <Button onClick={() => {navigate('/usuarios/alunos')}}>
                 <ArrowBackIosNewIcon />
             </Button>
 
@@ -113,7 +198,7 @@ export function GerenciaNotas() {
                             background: '#013d6b',
                         }, 
                         marginBottom: '20px' }}>
-                    <Table sx={{ width: '100%', fontSize: '16px' }}>
+                    <Table sx={{ width: '100%', fontSize: '16px', alignContent: 'center', alignItems: 'center' }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', fontFamily: 'Open Sans', fontSize: '18px' }}>Simulado</TableCell>
@@ -123,15 +208,12 @@ export function GerenciaNotas() {
                         </TableHead>
                         <TableBody>
                             {simulados.map((simulado) => (
-                                <TableRow key={simulado.id}>
-                                    <TableCell sx={{ fontFamily: 'Open Sans', fontSize: '16px' }}>{simulado.nome}</TableCell>
+                                <TableRow>
+                                    <TableCell sx={{ fontFamily: 'Open Sans', fontSize: '16px' }}>{simulado.simulado}</TableCell>
                                     <TableCell sx={{ fontFamily: 'Open Sans', fontSize: '16px' }}>{simulado.nota}</TableCell>
                                     <TableCell align="center">
-                                        <IconButton onClick={() => handleEditarSimulado(simulado)} sx={{ color: '#015495' }}>
+                                        <IconButton onClick={() => handleOpenEditModal(simulado)} sx={{ color: '#015495' }}>
                                             <EditIcon />
-                                        </IconButton>
-                                        <IconButton onClick={() => handleExcluirSimulado(simulado.id)} sx={{ color: 'red' }}>
-                                            <DeleteIcon />
                                         </IconButton>
                                     </TableCell>
                                 </TableRow>
@@ -152,7 +234,7 @@ export function GerenciaNotas() {
                     }}
                     onClick={handleAbrirModal}
                 >
-                    Novo gestor
+                    Novo Simulado
                     <AddIcon sx={{ marginLeft: '8px' }} />
                 </CustomButton>
             </Box>
@@ -160,32 +242,47 @@ export function GerenciaNotas() {
             {/* Modal para adicionar/editar simulado */}
             <Modal open={modalAberto} onClose={handleFecharModal}>
                 <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: 24 }}>
-                    <Typography variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans', fontWeight: 'bold' }}>
-                        {editandoSimulado ? 'Editar Simulado' : 'Adicionar Simulado'}
-                    </Typography>
-                    <TextField
-                        label="Nome do Simulado"
-                        fullWidth
-                        margin="normal"
-                        value={novoSimulado.nome}
-                        onChange={(e) => setNovoSimulado({ ...novoSimulado, nome: e.target.value })}
-                    />
-                    <TextField
-                        label="Nota"
-                        fullWidth
-                        margin="normal"
-                        type="number"
-                        value={novoSimulado.nota}
-                        onChange={(e) => setNovoSimulado({ ...novoSimulado, nota: e.target.value })}
-                    />
-                    <Button onClick={handleSalvarSimulado} variant="contained" sx={{ mt: 3, backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
-                        {editandoSimulado ? 'Salvar' : 'Adicionar'}
-                    </Button>
-                    <Button onClick={handleFecharModal} variant="contained" sx={{ mt: 3, backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans', marginLeft: '10px' }}>
-                        Fechar
-                    </Button>
+                    {simuladoSelecionado ? (
+                        <div>
+                            <Typography variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans', fontWeight: 'bold' }}>
+                                Editar Simulado
+                            </Typography>
+                            <TextField label="Simulado" fullWidth margin="normal" value={simuladoSelecionado.simulado} onChange={(e) => setSimuladoSelecionado({ ...simuladoSelecionado, simulado: e.target.value })} />
+                            <TextField label="Nota" type='number' slotProps={{ step: "0.01", min: 0 }} fullWidth margin="normal" value={simuladoSelecionado.nota} onChange={(e) => setSimuladoSelecionado({ ...simuladoSelecionado, nota: e.target.value })}/>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                                <Button onClick={handleSalvarEdicao} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Salvar
+                                </Button>
+                                <Button onClick={handleDelete} variant="contained" sx={{ backgroundColor: '#ab2325', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Excluir
+                                </Button>
+                                <Button onClick={handleFecharModal} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Fechar
+                                </Button>
+                            </Box>
+                        </div>
+                    ) : (
+                        <div>
+                            <Typography variant="h6" component="h2" sx={{ color: 'black', fontFamily: 'Open Sans', fontWeight: 'bold' }}>
+                                Novo Simulado
+                            </Typography>
+                            <TextField label="Simulado" fullWidth margin="normal" value={novoSimulado.nome} onChange={(e) => setNovoSimulado({ ...novoSimulado, nome: e.target.value })} />
+                            <TextField label="Nota" type='number' fullWidth margin="normal" slotProps={{ step: "0.01", min: 0 }} value={novoSimulado.nota} onChange={(e) => setNovoSimulado({ ...novoSimulado, nota: e.target.value })} />
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                                <Button onClick={handleSalvarNovoSimulado} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Salvar
+                                </Button>
+                                <Button onClick={handleFecharModal} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
+                                    Fechar
+                                </Button>
+                            </Box>
+                        </div>
+                    )}
                 </Box>
             </Modal>
+
         </Box>
     );
 }
