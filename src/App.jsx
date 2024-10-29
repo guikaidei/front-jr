@@ -26,25 +26,18 @@ import { CadastraAluno } from './gestor/CadastraAluno'
 import { CadastraProfessor } from './gestor/CadastraProfessor'
 import { CadastraGestor } from './gestor/CadastraGestor'
 import { HomePage } from './common/HomePage'
+import { VisualizaConteudos } from './aluno/VisualizaConteudos'  // Novo componente
 
 import { AuthProvider } from './context/AuthContext'
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
-
 function App() {
-
   return (
     <>
-      {/* Envolvendo a aplicação no componente Router para habilitar o roteamento */}
       <Router>
-        {/* Utilizando o componente AuthProvider para prover o contexto de autenticação */}
         <AuthProvider>
-          {/* Definindo um layout flexível com altura de 100vh */}
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Definindo a área principal com overflow automático */}
-            <div style={{ flex: 1, overflow: 'auto'}}>
-              {/* Definindo as rotas da aplicação */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
               <Routes>
                 <Route path='/' element={<HomePage />} />
                 <Route path='/login' element={<LoginPage />} />
@@ -68,6 +61,7 @@ function App() {
                 <Route path='/gestor/cadastra-aluno' element={<CadastraAluno />} />
                 <Route path='/gestor/cadastra-professor' element={<CadastraProfessor />} />
                 <Route path='/gestor/cadastra-gestor' element={<CadastraGestor />} />
+                <Route path='/listar-conteudos/:materia' element={<VisualizaConteudos />} />
               </Routes>
             </div>
           </div>
@@ -77,4 +71,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
