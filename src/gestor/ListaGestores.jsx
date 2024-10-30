@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import { Typography, Box, List, ListItem, Modal, TextField, MenuItem, Select, FormControl, InputLabel, Button } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-
 import { NavBar } from '../common/navbar';
 import { AuthContext } from '../context/AuthContext';
 
@@ -110,6 +108,7 @@ export function ListaGestores() {
         }
     };
 
+    // Função para deletar o gestor
     const handleDeleteGestor = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage

@@ -7,10 +7,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { NavBar } from '../common/navbar';
-import { format, parseISO, set } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
-
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -55,19 +52,15 @@ const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-
-
 export function GerenciaMateriaProf() {
 
+    // Dicionário para formatar as matérias
     const materiasFormatadas = {
         'matematica': 'Matemática',
         'portugues': 'Português',
         'humanas': 'Humanas',
         'naturais': 'Naturais',
     };
-
-
-    
 
     const navigate = useNavigate();
     const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
@@ -80,30 +73,21 @@ export function GerenciaMateriaProf() {
     }, [isAuthenticated, user, navigate]);
 
     const { materia } = useParams(); // Pegando o parâmetro da rota
-
-
-
     const [avisos, setAvisos] = useState([]);  // Estado para armazenar avisos da API
     const [modalNovoAviso, setModalNovoAviso] = useState(false); // Modal para novo aviso
     const [novoAviso, setNovoAviso] = useState({ titulo: '', conteudo: '' }); // Novo aviso
-    const [openEditModal, setOpenEditModal] = useState(false);
-    const [avisoSelecionado, setAvisoSelecionado] = useState(null);
+    const [openEditModal, setOpenEditModal] = useState(false); // Modal para editar aviso
+    const [avisoSelecionado, setAvisoSelecionado] = useState(null); // Aviso selecionado
 
     const [conteudos, setConteudos] = useState([]); // Estado para armazenar conteúdos da API
-    const [modalNovoConteudo, setModalNovoConteudo] = useState(false);
-    const [conteudoSelecionado, setConteudoSelecionado] = useState(null);
-    const [openEditModalConteudo, setOpenEditModalConteudo] = useState(false);
-    const [arquivoInput, setArquivoInput] = useState(null); // Para novo arquivo
+    const [modalNovoConteudo, setModalNovoConteudo] = useState(false); // Modal para novo conteúdo
+    const [conteudoSelecionado, setConteudoSelecionado] = useState(null); // Conteúdo selecionado 
+    const [openEditModalConteudo, setOpenEditModalConteudo] = useState(false); // Modal para editar conteúdo
     const [novosArquivos, setNovosArquivos] = useState([]); // Para armazenar novos arquivos
     const [novoConteudo, setNovoConteudo] = useState({ titulo: '', autor: '', descricao: '', arquivos: [] });
     const [arquivosParaDelete, setArquivosParaDelete] = useState([]); // Para armazenar arquivos a serem deletados
 
-    const [aulas, setAulas] = useState([]);
-    const [modalNovaAula, setModalNovaAula] = useState(false);
-    const [aulaEmEdicao, setAulaEmEdicao] = useState(null);
-    const [openEditModalAula, setOpenEditModalAula] = useState(false);
-    const [novaAula, setNovaAula] = useState({ horarioInicio: '', horarioFim: '' });
-
+    // Função para converter a data no formato brasileiro para o formato ISO
     const parseDate = (dateStr) => {
         const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
         return new Date(`${ano}-${mes}-${dia}`); // Retorna um objeto Date no formato ISO
@@ -112,7 +96,7 @@ export function GerenciaMateriaProf() {
     // Função para buscar avisos da API
     const fetchAvisos = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/listar-avisos/${materia}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -138,9 +122,10 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para buscar conteúdos da API
     const fetchConteudos = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`http://127.0.0.1:5000/listar-conteudos/${materia}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -166,9 +151,10 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para buscar aulas da API
     const fetchAulas = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/listar-aulas/${materia}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -186,7 +172,7 @@ export function GerenciaMateriaProf() {
             
                 // Ordenar as aulas pelo horário de início
                 const aulasOrdenadas = data.aulas.sort((a, b) => {
-                    const horarioA = new Date(`1970-01-01T${a.horarioInicio}:00`); // Supondo que o horário esteja no formato HH:mm
+                    const horarioA = new Date(`1970-01-01T${a.horarioInicio}:00`);
                     const horarioB = new Date(`1970-01-01T${b.horarioInicio}:00`);
                     return horarioA - horarioB; // Ordena em ordem crescente
                 });
@@ -214,6 +200,7 @@ export function GerenciaMateriaProf() {
     };
 
     const handleNovoAvisoClose = () => {
+        setNovoAviso({ titulo: '', conteudo: '' });
         setModalNovoAviso(false);
     };
 
@@ -236,7 +223,7 @@ export function GerenciaMateriaProf() {
     // Função para salvar as edições
     const handleSalvarEdicao = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/editar-aviso/${avisoSelecionado._id}`, {
                 method: 'PUT',
                 headers: {
@@ -263,9 +250,10 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para criar um novo aviso
     const handleCriarNovoAviso = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch('http://127.0.0.1:5000/criar-aviso', {
                 method: 'POST',
                 headers: {
@@ -281,7 +269,6 @@ export function GerenciaMateriaProf() {
             });
     
             if (response.ok) {
-                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
                 fetchAvisos();
                 handleNovoAvisoClose(); // Fecha o modal
             } else {
@@ -292,9 +279,10 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para deletar um aviso
     const handleDeletarAviso = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/deletar-aviso/${avisoSelecionado._id}`, {
                 method: 'DELETE',
                 headers: {
@@ -316,10 +304,6 @@ export function GerenciaMateriaProf() {
             console.error('Erro de conexão:', error);
         }
     };
-
-
-    
-
 
     // Handlers para modal de novo conteúdo
     const handleNovoConteudoOpen = () => {
@@ -343,8 +327,9 @@ export function GerenciaMateriaProf() {
         setConteudoSelecionado(null);
         setNovosArquivos([]); // Limpar novos arquivos ao fechar
         setArquivosParaDelete([]); // Limpar arquivos para deletar ao fechar
-    };
+    }; 
 
+    // Função para salvar as edições de conteúdo
     const handleSalvarEdicaoConteudo = async () => {
         try {
             const fd = new FormData();
@@ -373,7 +358,6 @@ export function GerenciaMateriaProf() {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // Não incluir Content-Type aqui, deixe o navegador definir automaticamente
                 },
                 body: fd
             });
@@ -395,6 +379,7 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para criar um novo conteúdo
     const handleCriarNovoConteudo = async () => {
         try {
             const fd = new FormData();
@@ -402,13 +387,12 @@ export function GerenciaMateriaProf() {
                 fd.append('arquivos', novosArquivos[i]);
             }
     
-            // Adicione os outros campos ao FormData, pois o FormData permite misturar arquivos com outros dados
             fd.append('titulo', novoConteudo.titulo);
             fd.append('autor', novoConteudo.autor);
             fd.append('descricao', novoConteudo.descricao);
             fd.append('materia', materia);
     
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch('http://127.0.0.1:5000/criar-conteudo', {
                 method: 'POST',
                 headers: {
@@ -418,7 +402,6 @@ export function GerenciaMateriaProf() {
             });
     
             if (response.ok) {
-                // Supondo que o conteúdo é adicionado com sucesso, você pode atualizar a lista de conteúdos localmente
                 fetchConteudos();
                 handleNovoConteudoClose(); // Fecha o modal
             } else {
@@ -429,10 +412,10 @@ export function GerenciaMateriaProf() {
         }
     };
     
-
+    // Função para deletar um conteúdo
     const handleDeletarConteudo = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/deletar-conteudo/${conteudoSelecionado._id}`, {
                 method: 'DELETE',
                 headers: {
@@ -455,21 +438,15 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    // Função para deletar um arquivo
     const handleNovoConteudoChange = (field, value) => {
         setNovoConteudo({ ...novoConteudo, [field]: value });
     };
 
-
-    const handleRemoverArquivo = (arquivo) => {
-        setConteudoSelecionado({
-            ...conteudoSelecionado,
-            arquivos: conteudoSelecionado.arquivos.filter((arq) => arq !== arquivo),
-        });
-    };
-
+    // Função para deletar um arquivo
     const handleDeletarArquivo = async (id) => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`http://127.0.0.1:5000/deletar-arquivo/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -493,7 +470,7 @@ export function GerenciaMateriaProf() {
         }
     };
 
-    
+    // Função para baixar um arquivo    
     const handleBaixarArquivo = async (fileId) => {
     try {
         const token = localStorage.getItem('jwtToken');
@@ -531,19 +508,10 @@ export function GerenciaMateriaProf() {
     }
 };
 
-
-
     // Função para manipular o upload de novos arquivos
     const handleNovoArquivoUpload = (e) => {
         const arquivosSelecionados = Array.from(e.target.files); // Converte FileList para Array
         setNovosArquivos((prevArquivos) => [...prevArquivos, ...arquivosSelecionados]);
-    };
-
-    // Função para remover um novo arquivo selecionado
-    const handleRemoverNovoArquivo = (arquivoRemover) => {
-        setNovosArquivos((prevArquivos) =>
-            prevArquivos.filter((arquivo) => arquivo !== arquivoRemover)
-        );
     };
 
     const handleRemoverArquivoExistente = (arquivo) => {
@@ -553,126 +521,6 @@ export function GerenciaMateriaProf() {
             arquivos: conteudoSelecionado.arquivos.filter((arq) => arq !== arquivo),
         });
     };
-
-    const handleAdicionarNovoArquivo = () => {
-        if (arquivoInput) {
-            setNovosArquivos([...novosArquivos, arquivoInput]);
-            setArquivoInput(null); // Limpar input após adicionar
-        }
-    };
-
-
-
-
-
-
-    // Add new state for classes
-    
-    // Handlers for class management
-    const handleNovaAulaOpen = () => {
-        setModalNovaAula(true);
-    };
-
-    const handleNovaAulaClose = () => {
-        setModalNovaAula(false);
-        setAulaEmEdicao(null);
-    };
-
-    const handleOpenEditModalAula = (aula) => {
-        setAulaEmEdicao({ ...aula });
-        setOpenEditModalAula(true);
-    };
-
-    const handleCloseEditModalAula = () => {
-        setOpenEditModalAula(false);
-        setAulaEmEdicao(null);
-    };
-
-    const handleSalvarEdicaoAula = async () => {
-        try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
-            const response = await fetch(`http://127.0.0.1:5000/editar-aula/${aulaEmEdicao._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    horarioInicio: aulaEmEdicao.horarioInicio,
-                    horarioFim: aulaEmEdicao.horarioFim,
-
-                })
-            });
-    
-            if (response.ok) {
- 
-                await fetchAulas();
-                handleCloseEditModalAula();
-                
-            } else {
-                console.error('Erro ao editar aula:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Erro de conexão:', error);
-        }
-    };
-
-    const handleCriarNovaAula = async () => {
-        try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
-            const response = await fetch('http://127.0.0.1:5000/criar-aula', {
-                method: 'POST',
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    horarioInicio: novaAula.horarioInicio,
-                    horarioFim: novaAula.horarioFim,
-                    materia: materia,
-
-                })
-            });
-    
-            if (response.ok) {
-                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
-                fetchAulas();
-                handleNovaAulaClose(); // Fecha o modal
-            } else {
-                console.error('Erro ao criar aula:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Erro de conexão:', error);
-        }
-    };
-
-    const handleDeletarAula = async () => {
-        try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
-            const response = await fetch(`http://127.0.0.1:5000/deletar-aula/${aulaEmEdicao._id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-    
-            if (response.ok) {
-                // Remover o aviso da lista localmente
-                fetchAulas();
-                handleCloseEditModalAula();
-            } else {
-                console.error('Erro ao deletar conteudo:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Erro de conexão:', error);
-        }
-    };
-
-
 
     return (
         <Box sx={{ paddingTop: '80px', fontFamily: 'Open Sans' }}>
@@ -714,7 +562,7 @@ export function GerenciaMateriaProf() {
                         sx={{
                             width: '100%',
                             maxWidth: '600px',
-                            height: '400px', // Fixed height for scroll
+                            maxHeight: '400px', // Fixed height for scroll
                             overflow: 'auto', // Enable scroll
                             '&::-webkit-scrollbar': { width: '8px' },
                             '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },
@@ -914,7 +762,7 @@ export function GerenciaMateriaProf() {
                         sx={{
                             width: '100%',
                             maxWidth: '600px',
-                            height: '400px',
+                            maxHeight: '400px',
                             overflow: 'auto',
                             '&::-webkit-scrollbar': {
                                 width: '8px',

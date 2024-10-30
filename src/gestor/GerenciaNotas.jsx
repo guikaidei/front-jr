@@ -39,6 +39,7 @@ export function GerenciaNotas() {
     const [simuladoSelecionado, setSimuladoSelecionado] = useState(null);
     const [modalAberto, setModalAberto] = useState(false);
 
+    // Função para buscar simulados
     const fetchSimulados = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -106,6 +107,7 @@ export function GerenciaNotas() {
         }
     };
 
+    // Função para deletar simulado
     const handleDelete = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -137,6 +139,7 @@ export function GerenciaNotas() {
 
     const [novoSimulado, setNovoSimulado] = useState({ nome: '', nota: '' });
 
+    // Função para salvar novo simulado
     const handleSalvarNovoSimulado = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage

@@ -3,7 +3,7 @@ import { Paper, Typography, TextField, Button, IconButton, Snackbar, Box } from 
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import Grid from '@mui/material/Grid';
-import { AuthContext } from '../context/AuthContext'; // Importando o contexto
+import { AuthContext } from '../context/AuthContext'; 
 
 const Container = styled('div')({
     minHeight: '100vh',
@@ -89,11 +89,11 @@ export function LoginPage() {
         e.preventDefault();
         setLoading(true);
 
-        // Reset errors
+        // Reseta erros
         setMatriculaError(false);
         setSenhaError(false);
 
-        // Input validation
+        // Validação dos campos
         if (!matricula) {
             setMessage('Por favor, preencha a matrícula');
             setMatriculaError(true);
@@ -110,6 +110,7 @@ export function LoginPage() {
             return;
         }
 
+        // Faz a requisição para o servidor
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',

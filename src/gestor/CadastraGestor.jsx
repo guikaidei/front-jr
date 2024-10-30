@@ -26,6 +26,7 @@ const CustomButton = styled(Button)(({ theme }) => ({
     fontWeight: 'light',
 }));
 
+
 export function CadastraGestor() {
 
     const navigate = useNavigate();
@@ -54,6 +55,7 @@ export function CadastraGestor() {
         }));
     };
 
+    // Função para lidar com o envio do formulário
     const handleSubmit = async (event) => {
         event.preventDefault();
     

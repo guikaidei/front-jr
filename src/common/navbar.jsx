@@ -37,9 +37,9 @@ export function NavBar() {
     };
 
     const logout = () => {
-        localStorage.removeItem('jwtToken');
-        localStorage.removeItem('userType');
-        navigate('/login');
+        localStorage.removeItem('jwtToken'); // Remove o token JWT do localStorage
+        localStorage.removeItem('userType'); // Remove o tipo de usuário do localStorage
+        navigate('/login'); // Redireciona para a página de login
     };
 
     const handleLogoClick = () => {

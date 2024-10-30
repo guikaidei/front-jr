@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Box, List, ListItem, Button, Modal, TextField, Select, MenuItem, InputLabel, FormControl, Checkbox, ListItemText, OutlinedInput } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
@@ -37,10 +37,8 @@ export function ListaProfessores() {
         }
     }, [isAuthenticated, user, navigate]);
     
-    const [modalNovoProfessor, setModalNovoProfessor] = useState(false);
     const [openEditModal, setOpenEditModal] = useState(false);
     const [professorSelecionado, setProfessorSelecionado] = useState(null);
-    const [novoProfessor, setNovoProfessor] = useState({ nome: '', email: '', turma: '', status: '', materias: [] });
     const [searchTerm, setSearchTerm] = useState(''); // Filtro por nome
     const [filtroMateria, setFiltroMateria] = useState('');
     const [professores, setProfessores] = useState([]); // Lista de professores
@@ -50,7 +48,7 @@ export function ListaProfessores() {
     // Função para buscar professores da API
     const fetchProfesores = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch('http://127.0.0.1:5000/gestor/lista-professores', {
                 headers: {
                     'Access-Control-Allow-Origin': '*',
@@ -72,9 +70,6 @@ export function ListaProfessores() {
         fetchProfesores();
     }, []); 
 
-    // Função para abrir o modal de novo professor
-    const handleNovoProfessorOpen = () => setModalNovoProfessor(true);
-    const handleNovoProfessorClose = () => setModalNovoProfessor(false);
 
     // Função para abrir o modal de edição
     const handleOpenEditModal = (professor) => {
@@ -91,7 +86,7 @@ export function ListaProfessores() {
     // Função para salvar edições no professor
     const handleSalvarEdicao = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`http://127.0.0.1:5000/gestor/editar-professor/${professorSelecionado.matricula}`, {
                 method: 'PUT',
                 headers: {
@@ -122,7 +117,7 @@ export function ListaProfessores() {
     // Função para deletar um professor
     const handleDelete = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken'); 
             const response = await fetch(`http://127.0.0.1:5000/gestor/deletar-professor/${professorSelecionado.matricula}`, {
                 method: 'DELETE',
                 headers: {
