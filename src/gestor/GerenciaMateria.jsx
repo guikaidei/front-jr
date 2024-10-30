@@ -7,8 +7,6 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { NavBar } from '../common/navbar';
-import { format, parseISO, set } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
 
 
@@ -86,23 +84,23 @@ export function GerenciaMateria() {
     const [avisos, setAvisos] = useState([]);  // Estado para armazenar avisos da API
     const [modalNovoAviso, setModalNovoAviso] = useState(false); // Modal para novo aviso
     const [novoAviso, setNovoAviso] = useState({ titulo: '', conteudo: '' }); // Novo aviso
-    const [openEditModal, setOpenEditModal] = useState(false);
-    const [avisoSelecionado, setAvisoSelecionado] = useState(null);
+    const [openEditModal, setOpenEditModal] = useState(false); // Modal para edição de aviso
+    const [avisoSelecionado, setAvisoSelecionado] = useState(null); // Aviso selecionado
 
     const [conteudos, setConteudos] = useState([]); // Estado para armazenar conteúdos da API
-    const [modalNovoConteudo, setModalNovoConteudo] = useState(false);
-    const [conteudoSelecionado, setConteudoSelecionado] = useState(null);
-    const [openEditModalConteudo, setOpenEditModalConteudo] = useState(false);
+    const [modalNovoConteudo, setModalNovoConteudo] = useState(false); // Modal para novo conteúdo
+    const [conteudoSelecionado, setConteudoSelecionado] = useState(null); // Conteúdo selecionado
+    const [openEditModalConteudo, setOpenEditModalConteudo] = useState(false); // Modal para edição de conteúdo
     const [arquivoInput, setArquivoInput] = useState(null); // Para novo arquivo
     const [novosArquivos, setNovosArquivos] = useState([]); // Para armazenar novos arquivos
-    const [novoConteudo, setNovoConteudo] = useState({ titulo: '', autor: '', descricao: '', arquivos: [] });
+    const [novoConteudo, setNovoConteudo] = useState({ titulo: '', autor: '', descricao: '', arquivos: [] }); // Novo conteúdo
     const [arquivosParaDelete, setArquivosParaDelete] = useState([]); // Para armazenar arquivos a serem deletados
 
-    const [aulas, setAulas] = useState([]);
-    const [modalNovaAula, setModalNovaAula] = useState(false);
-    const [aulaEmEdicao, setAulaEmEdicao] = useState(null);
-    const [openEditModalAula, setOpenEditModalAula] = useState(false);
-    const [novaAula, setNovaAula] = useState({ horarioInicio: '', horarioFim: '' });
+    const [aulas, setAulas] = useState([]); // Estado para armazenar aulas da API
+    const [modalNovaAula, setModalNovaAula] = useState(false); // Modal para nova aula
+    const [aulaEmEdicao, setAulaEmEdicao] = useState(null); // Aula selecionada
+    const [openEditModalAula, setOpenEditModalAula] = useState(false); // Modal para edição de aula
+    const [novaAula, setNovaAula] = useState({ horarioInicio: '', horarioFim: '' }); // Nova aula
 
     const parseDate = (dateStr) => {
         const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
@@ -138,6 +136,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para buscar conteúdos da API
     const fetchConteudos = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -165,7 +164,8 @@ export function GerenciaMateria() {
             console.error('Erro de conexão:', error);
         }
     };
-
+    
+    // Função para buscar aulas da API
     const fetchAulas = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -263,6 +263,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para criar um novo aviso
     const handleCriarNovoAviso = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -292,6 +293,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para deletar um aviso
     const handleDeletarAviso = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -345,6 +347,7 @@ export function GerenciaMateria() {
         setArquivosParaDelete([]); // Limpar arquivos para deletar ao fechar
     };
 
+    // Função para salvar as edições de conteúdo
     const handleSalvarEdicaoConteudo = async () => {
         try {
             const fd = new FormData();
@@ -395,6 +398,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para criar um novo conteúdo
     const handleCriarNovoConteudo = async () => {
         try {
             const fd = new FormData();
@@ -430,6 +434,7 @@ export function GerenciaMateria() {
     };
     
 
+    // Função para deletar um conteúdo
     const handleDeletarConteudo = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -467,6 +472,8 @@ export function GerenciaMateria() {
         });
     };
 
+
+    // Função para deletar um arquivo
     const handleDeletarArquivo = async (id) => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -494,6 +501,7 @@ export function GerenciaMateria() {
     };
 
     
+    // Função para baixar um arquivo
     const handleBaixarArquivo = async (fileId) => {
     try {
         const token = localStorage.getItem('jwtToken');
@@ -588,6 +596,7 @@ export function GerenciaMateria() {
         setAulaEmEdicao(null);
     };
 
+    // Função para manipular a mudança de horário de início e fim da aula
     const handleSalvarEdicaoAula = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -618,6 +627,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para criar uma nova aula
     const handleCriarNovaAula = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -648,6 +658,7 @@ export function GerenciaMateria() {
         }
     };
 
+    // Função para deletar uma aula
     const handleDeletarAula = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -714,7 +725,7 @@ export function GerenciaMateria() {
                         sx={{
                             width: '100%',
                             maxWidth: '600px',
-                            height: '400px', // Fixed height for scroll
+                            maxHeight: '400px', // Fixed height for scroll
                             overflow: 'auto', // Enable scroll
                             '&::-webkit-scrollbar': { width: '8px' },
                             '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },
@@ -914,7 +925,7 @@ export function GerenciaMateria() {
                         sx={{
                             width: '100%',
                             maxWidth: '600px',
-                            height: '400px',
+                            maxHeight: '400px',
                             overflow: 'auto',
                             '&::-webkit-scrollbar': {
                                 width: '8px',
@@ -1209,7 +1220,7 @@ export function GerenciaMateria() {
                     sx={{
                         width: '100%',
                         maxWidth: '600px',
-                        height: '400px',
+                        maxHeight: '400px',
                         overflow: 'auto',
                         '&::-webkit-scrollbar': {
                             width: '8px',

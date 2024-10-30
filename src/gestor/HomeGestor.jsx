@@ -1,20 +1,40 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-
-
 import { Typography, Box, Grid, Button, Paper, List, ListItem, Modal, TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-
 import { NavBar } from '../common/navbar';
-
-import { format, parseISO } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
 
+const MateriaBox = styled(Paper)(({ theme }) => ({
+    padding: '30px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        transform: 'scale(1.05)',
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
+    },
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minHeight: '250px', // Altura mínima para todas as telas
+    [theme.breakpoints.up('md')]: {
+        minHeight: '400px', // Altura mínima em telas médias e grandes
+        justifyContent: 'center',
+    },
+}));
 
+
+// Componente estilizado para as imagens das matérias
+const MateriaImage = styled('img')({
+    width: '100%',
+    height: '150px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    marginBottom: '15px',
+});
 
 
 
@@ -49,6 +69,44 @@ const CustomButton2 = styled(Button)(({ theme }) => ({
     borderRadius: '0px',
 }));
 
+
+const OptionBox = styled(Paper)(({ theme }) => ({
+    padding: '30px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        transform: 'scale(1.05)',
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
+    },
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minHeight: '150px',
+    [theme.breakpoints.down('sm')]: {
+        display: 'none', // Oculta o componente em telas menores
+    },
+}));
+
+const OptionButton = styled(Button)(({ theme }) => ({
+    width: '100%',
+    maxWidth: '300px',
+    height: '80px',
+    backgroundColor: 'white',
+    color: 'black',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+    '&:hover': {
+        backgroundColor: '#f5f5f5',
+    },
+    fontFamily: 'Open Sans',
+    margin: '0 auto', // Centraliza o botão horizontalmente
+    [theme.breakpoints.up('md')]: {
+        display: 'none', // Oculta o botão em telas maiores
+    },
+}));
+
 export function HomeGestor() {
     const navigate = useNavigate();
     const [modalNovoAviso, setModalNovoAviso] = useState(false); // Modal para novo aviso
@@ -73,6 +131,32 @@ export function HomeGestor() {
         { nome: 'Naturais', rota: 'naturais' },
     ];
 
+    // Dicionário para formatar as matérias
+    const materiasFormatadas = {
+        'matematica': 'Matemática',
+        'portugues': 'Português',
+        'humanas': 'Humanas',
+        'naturais': 'Naturais',
+    };
+
+    // Dicionário para associar imagens às matérias
+    const imagensMaterias = {
+        'matematica': '/assets/foto_matematica.jpg',
+        'portugues': '/assets/foto_portugues.jpg',
+        'humanas': '/assets/foto_humanas.jpg',
+        'naturais': '/assets/foto_biologia.jpg',
+    };
+
+    // Lista de matérias do gestor
+    const materiasGestor = ['matematica', 'portugues', 'humanas', 'naturais'];
+
+    const options = [
+        { label: 'Alunos', path: '/usuarios/alunos' },
+        { label: 'Professores', path: '/usuarios/professores' },
+        { label: 'Gestores', path: '/usuarios/gestores' },
+    ];
+
+    // Função para converter a data no formato brasileiro
     const parseDate = (dateStr) => {
         const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
         return new Date(`${ano}-${mes}-${dia}`); // Retorna um objeto Date no formato ISO
@@ -120,6 +204,7 @@ export function HomeGestor() {
         setModalNovoAviso(true);
     };
 
+    // Função para criar um novo aviso
     const handleCriarNovoAviso = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -138,7 +223,6 @@ export function HomeGestor() {
             });
     
             if (response.ok) {
-                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
                 fetchAvisos();
                 handleNovoAvisoClose(); // Fecha o modal
             } else {
@@ -200,6 +284,7 @@ export function HomeGestor() {
         }
     };
 
+    // Função para deletar um aviso
     const handleDeletarAviso = async () => {
         try {
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
@@ -241,78 +326,43 @@ export function HomeGestor() {
                     flexDirection: 'column',
                     alignItems: 'center',
                     marginBottom: '20px',
+                    justifyContent: 'center',
                 }}
             >
                 <Typography variant="h4" gutterBottom sx={{ color: '#ab2325', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
                     Usuários
                 </Typography>
 
-                <Grid container spacing={3} direction="column" alignItems="center" sx={{ maxWidth: '400px' }}>
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            sx={{
-                                width: '300px',
-                                height: '80px',
-                                backgroundColor: 'white',
-                                color: 'black',  // Texto vermelho
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                                '&:hover': {
-                                    backgroundColor: '#f5f5f5',
-                                },
-                                fontFamily: 'Open Sans',
-                            }}
-                            onClick={() => navigate('/usuarios/alunos')}
-                        >
-                            Alunos
-                        </Button>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            sx={{
-                                width: '300px',
-                                height: '80px',
-                                backgroundColor: 'white',
-                                color: 'black',  // Texto vermelho
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                                '&:hover': {
-                                    backgroundColor: '#f5f5f5',
-                                },
-                                fontFamily: 'Open Sans',
-                            }}
-                            onClick={() => navigate('/usuarios/professores')}
-                        >
-                            Professores
-                        </Button>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <Button
-                            variant="contained"
-                            sx={{
-                                width: '300px',
-                                height: '80px',
-                                backgroundColor: 'white',
-                                color: 'black',  // Texto vermelho
-                                fontSize: '18px',
-                                fontWeight: 'bold',
-                                boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                                '&:hover': {
-                                    backgroundColor: '#f5f5f5',
-                                },
-                                fontFamily: 'Open Sans',
-                            }}
-                            onClick={() => navigate('/usuarios/gestores')}
-                        >
-                            Gestores
-                        </Button>
-                    </Grid>
+                <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px' }}>
+                    {options.map((option, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={index} sx={{ textAlign: 'center' }}>
+                            {/* Caixas em telas maiores */}
+                            <OptionBox onClick={() => navigate(option.path)}>
+                                <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold', fontFamily: 'Open Sans', marginTop: '15px' }}>
+                                    {option.label}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Open Sans', marginTop: '10px' }}>
+                                    Clique para acessar a seção de {option.label}.
+                                </Typography>
+                            </OptionBox>
+
+                            {/* Botões em telas menores */}
+                            <OptionButton onClick={() => navigate(option.path)}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                {option.label}
+                            </OptionButton>
+                        </Grid>
+                    ))}
                 </Grid>
             </Box>
+
+
+
 
             {/* Seção de Matérias */}
             <Box
@@ -326,30 +376,33 @@ export function HomeGestor() {
                     paddingBottom: '40px',
                 }}
             >
-                <Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', marginBottom: '20px', fontFamily: 'Open Sans' }}>
+
+                <Typography 
+                    variant="h4" 
+                    gutterBottom 
+                    sx={{ 
+                        color: 'white', 
+                        fontWeight: 'bold', 
+                        marginBottom: '30px', 
+                        fontFamily: 'Open Sans',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+                    }}
+                >
                     Matérias
                 </Typography>
-                <Grid container spacing={2} justifyContent="center" sx={{ maxWidth: '800px' }}>
-                    {materias.map((materia, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Paper
-                                elevation={3}
-                                sx={{
-                                    padding: '20px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s',
-                                    '&:hover': {
-                                        transform: 'scale(1.05)',
-                                        backgroundColor: '#f5f5f5',
-                                    },
-                                }}
-                                onClick={() => handleMateriaClick(materia.rota)}
-                            >
-                                <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                    {materia.nome}
+
+                <Grid container spacing={4} justifyContent="center" sx={{ maxWidth: '1200px' }}>
+                    {materiasGestor.map((materia, index) => (
+                        <Grid item xs={12} sm={6} md={3} key={index}>
+                            <MateriaBox onClick={() => handleMateriaClick(materia)}>
+                                <MateriaImage src={imagensMaterias[materia]} alt={materiasFormatadas[materia]} />
+                                <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold', fontFamily: 'Open Sans', marginTop: '15px' }}>
+                                    {materiasFormatadas[materia]}
                                 </Typography>
-                            </Paper>
+                                <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Open Sans', marginTop: '10px' }}>
+                                    Clique para acessar o conteúdo de {materiasFormatadas[materia]}.
+                                </Typography>
+                            </MateriaBox>
                         </Grid>
                     ))}
                 </Grid>
@@ -381,7 +434,7 @@ export function HomeGestor() {
                         sx={{
                             width: '100%',
                             maxWidth: '600px',
-                            height: '400px', // Fixed height for scroll
+                            maxHeight: '400px', // Fixed height for scroll
                             overflow: 'auto', // Enable scroll
                             '&::-webkit-scrollbar': { width: '8px' },
                             '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },

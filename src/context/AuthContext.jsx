@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    // Função para fazer login
     const login = (token, tipo) => {
         localStorage.setItem('jwtToken', token);
         localStorage.setItem('userType', tipo);
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
         navigate(`/home-${tipo}`);
     };
 
+    // Função para fazer logout
     const logout = () => {
         localStorage.removeItem('jwtToken');
         localStorage.removeItem('userType');

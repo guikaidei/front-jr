@@ -81,6 +81,7 @@ export function CadastraProfessor() {
         );
     };
 
+    // Função para lidar com o envio do formulário
     const handleSubmit = async (event) => {
         event.preventDefault();
     

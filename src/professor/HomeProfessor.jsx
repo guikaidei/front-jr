@@ -1,78 +1,94 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { List, ListItem, ListItemText, Typography, Box, Grid, Modal, Button, Paper, Table, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
+import { Typography, Box, Grid, Paper } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { NavBar } from '../common/navbar';
 import { styled } from '@mui/material/styles';
-import { format, parseISO } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
 
-
-const CustomButton = styled(Button)(({ theme }) => ({
-    '&.MuiButton-containedPrimary': {
-        backgroundColor: '#015495',
-        color: 'white',
-        '&:hover': {
-            backgroundColor: '#0067b8',
-        },
+// Componente estilizado para o Paper das matérias
+const MateriaBox = styled(Paper)(({ theme }) => ({
+    padding: '30px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        transform: 'scale(1.05)',
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
     },
-    width: '250px',
-    height: '60px',
-    marginTop: '20px',
-    fontFamily: 'Open Sans',
-    fontWeight: 'light',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    minHeight: '250px', // Altura mínima para todas as telas
+    [theme.breakpoints.up('md')]: {
+        minHeight: '400px', // Altura mínima em telas médias e grandes
+        justifyContent: 'center',
+    },
 }));
+
+const BoxGeral = styled(Box)(({ theme }) => ({
+    paddingTop: '80px', 
+    fontFamily: 'Open Sans', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center',
+    backgroundColor: 'white',
+    minHeight: '100vh',
+    justifyContent: 'center',
+    [theme.breakpoints.up('md')]: {
+        paddingTop: '0px',
+    },
+}));
+
+
+
+// Componente estilizado para as imagens das matérias
+const MateriaImage = styled('img')({
+    width: '100%',
+    height: '150px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    marginBottom: '15px',
+});
 
 export function HomeProfessor() {
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
+    const { isAuthenticated, user } = useContext(AuthContext);
 
     useEffect(() => {
-        // Verifique se o usuário está autenticado e se o tipo de usuário é "gestor"
         if (!isAuthenticated || user.tipo !== 'professor') {
-        navigate('/login'); // Redireciona para a página de login ou outra página de acesso negado
+            navigate('/login'); 
         }
     }, [isAuthenticated, user, navigate]);
-
-
-    // Lista de matérias com rotas associadas
-    const materias = [
-        { nome: 'Matemática', rota: '/professor/matematica' },
-        { nome: 'Português', rota: '/professor/portugues' },
-        { nome: 'Humanas', rota: '/professor/humanas' },
-        { nome: 'Naturais', rota: '/professor/naturais' },
-    ];
 
     const materiasFormatadas = {
         'matematica': 'Matemática',
         'portugues': 'Português',
         'humanas': 'Humanas',
         'naturais': 'Naturais',
-    }
+    };
 
+    const imagensMaterias = {
+        'matematica': '/assets/foto_matematica.jpg',
+        'portugues': '/assets/foto_portugues.jpg',
+        'humanas': '/assets/foto_humanas.jpg',
+        'naturais': '/assets/foto_biologia.jpg',
+    };
 
-    const [materiasProfessor, setMateriasProfessor] = useState([]);  // Estado para armazenar os avisos
+    const [materiasProfessor, setMateriasProfessor] = useState([]);
 
-    // Função para buscar avisos da API
+    // Função para buscar as matérias do professor
     const fetchMaterias = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch('http://127.0.0.1:5000/professor/listar-materias', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
-                    'Aceess-Control-Allow-Credentials': 'true',
-                    'Acess-Control-Max-Age': '86400',
-                    
                 },
             });
             if (response.ok) {
                 const data = await response.json();
-            
-                setMateriasProfessor(data.materias); 
+                setMateriasProfessor(data.materias);
             } else {
                 console.error('Erro ao buscar materias:', response.statusText);
             }
@@ -82,63 +98,52 @@ export function HomeProfessor() {
     };
 
     useEffect(() => {
-        fetchMaterias();  // Chamada à função para carregar os avisos
-    }, []); // Executa apenas uma vez na montagem do componente
-
-    // Filter materias to only show the ones in materiasProfessor
-    const materiasFiltradas = materias.filter(materia => 
-        materiasProfessor.includes(materia.nome)
-    );
+        fetchMaterias();
+    }, []);
 
     const handleMateriaClick = (materia) => {
         navigate('/professor/' + materia);
     };
 
     return (
-        <Box sx={{ paddingTop: '80px', fontFamily: 'Open Sans', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <NavBar/>
+        <Box 
+            sx={{
+                
+            }}
+        >
+            <NavBar />
 
-            {/* Seção de Materias */}
-            <Box 
-                sx={{ 
-                    backgroundColor: 'white', 
-                    width: '100%', 
-                    padding: '20px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center',
-                    paddingBottom: '40px',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography variant="h4" gutterBottom sx={{ color: '#ab2325', fontWeight: 'bold', marginBottom: '20px', fontFamily: 'Open Sans' }}>
+            <BoxGeral >
+                <Typography 
+                    variant="h4" 
+                    gutterBottom 
+                    sx={{ 
+                        color: '#ab2325', 
+                        fontWeight: 'bold', 
+                        marginBottom: '30px', 
+                        fontFamily: 'Open Sans',
+                        textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+                    }}
+                >
                     Matérias
                 </Typography>
-                <Grid container spacing={2} justifyContent="center" sx={{ maxWidth: '800px' }}>
+
+                <Grid container spacing={4} justifyContent="center" sx={{ maxWidth: '1200px' }}>
                     {materiasProfessor.map((materia, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Paper 
-                                elevation={3} 
-                                sx={{
-                                    padding: '20px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s',
-                                    '&:hover': {
-                                        transform: 'scale(1.05)',
-                                        backgroundColor: '#f5f5f5'
-                                    }
-                                }}
-                                onClick={() => handleMateriaClick(materia)}
-                            >
-                                <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
+                        <Grid item xs={12} sm={6} md={3} key={index}>
+                            <MateriaBox onClick={() => handleMateriaClick(materia)}>
+                                <MateriaImage src={imagensMaterias[materia]} alt={materiasFormatadas[materia]} />
+                                <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold', fontFamily: 'Open Sans', marginTop: '15px' }}>
                                     {materiasFormatadas[materia]}
                                 </Typography>
-                            </Paper>
+                                <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Open Sans', marginTop: '10px' }}>
+                                    Clique para acessar o conteúdo de {materiasFormatadas[materia]}.
+                                </Typography>
+                            </MateriaBox>
                         </Grid>
                     ))}
                 </Grid>
-            </Box>
+            </BoxGeral>
         </Box>
     );
 }
