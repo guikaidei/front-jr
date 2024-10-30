@@ -8,19 +8,7 @@ import { ListaAlunos } from './aluno/ListaAlunos'
 import { ListaProfessores } from './professor/ListaProfessores'
 import { ListaGestores } from './gestor/ListaGestores'
 import { GerenciaNotas } from './gestor/GerenciaNotas'
-import { GerenciaMatematica } from './gestor/GerenciaMatematica'
-import { GerenciaPortugues } from './gestor/GerenciaPortugues'
-import { GerenciaHumanas } from './gestor/GerenciaHumanas'
-import { GerenciaNaturais } from './gestor/GerenciaNaturais'
 import { GerenciaMateria } from './gestor/GerenciaMateria'
-import { VisualizaMatematica } from './aluno/VisualizaMatematica'
-import { VisualizaHumanas } from './aluno/VisualizaHumanas'
-import { VisualizaNaturais } from './aluno/VisualizaNaturais'
-import { VisualizaPortugues } from './aluno/VisualizaPortugues'
-import { GerenciaHumanasProf } from './professor/GerenciaHumanasProf'
-import { GerenciaMatematicaProf } from './professor/GerenciaMatematicaProf'
-import { GerenciaNaturaisProf } from './professor/GerenciaNaturaisProf'
-import { GerenciaPortuguesProf } from './professor/GerenciaPortuguesProf'
 import { GerenciaMateriaProf } from './professor/GerenciaMateriaProf'
 import { CadastraAluno } from './gestor/CadastraAluno'
 import { CadastraProfessor } from './gestor/CadastraProfessor'
@@ -48,15 +36,7 @@ function App() {
                 <Route path='/usuarios/professores' element={<ListaProfessores />} />
                 <Route path='/usuarios/gestores' element={<ListaGestores />} />
                 <Route path='/gestor/gerencia-notas/:matricula' element={<GerenciaNotas />} />
-                <Route path='/gestor/gerencia-matematica' element={<GerenciaMatematica />} />
-                <Route path='/gestor/gerencia-portugues' element={<GerenciaPortugues />} />
-                <Route path='/gestor/gerencia-humanas' element={<GerenciaHumanas />} />
-                <Route path='/gestor/gerencia-naturais' element={<GerenciaNaturais />} />
                 <Route path='/gestor/gerencia-materia/:materia' element={<GerenciaMateria />} />
-                <Route path='/aluno/matematica' element={<VisualizaMatematica />} />
-                <Route path='/aluno/humanas' element={<VisualizaHumanas />} />
-                <Route path='/aluno/naturais' element={<VisualizaNaturais />} />
-                <Route path='/aluno/portugues' element={<VisualizaPortugues />} />
                 <Route path='/professor/:materia' element={<GerenciaMateriaProf />} />
                 <Route path='/gestor/cadastra-aluno' element={<CadastraAluno />} />
                 <Route path='/gestor/cadastra-professor' element={<CadastraProfessor />} />
