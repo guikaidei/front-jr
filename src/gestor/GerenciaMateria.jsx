@@ -7,7 +7,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { NavBar } from '../common/navbar';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, set } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
 
@@ -96,6 +96,7 @@ export function GerenciaMateria() {
     const [arquivoInput, setArquivoInput] = useState(null); // Para novo arquivo
     const [novosArquivos, setNovosArquivos] = useState([]); // Para armazenar novos arquivos
     const [novoConteudo, setNovoConteudo] = useState({ titulo: '', autor: '', descricao: '', arquivos: [] });
+    const [arquivosParaDelete, setArquivosParaDelete] = useState([]); // Para armazenar arquivos a serem deletados
 
     const [aulas, setAulas] = useState([]);
     const [modalNovaAula, setModalNovaAula] = useState(false);
@@ -328,6 +329,7 @@ export function GerenciaMateria() {
     const handleNovoConteudoClose = () => {
         setModalNovoConteudo(false);
         setNovoConteudo({ titulo: '', autor: '', descricao: '', arquivos: [] });
+        setNovosArquivos([]); // Limpar novos arquivos ao fechar
     };
 
     // Handlers para modal de edição de conteúdo
@@ -340,33 +342,53 @@ export function GerenciaMateria() {
         setOpenEditModalConteudo(false);
         setConteudoSelecionado(null);
         setNovosArquivos([]); // Limpar novos arquivos ao fechar
+        setArquivosParaDelete([]); // Limpar arquivos para deletar ao fechar
     };
 
     const handleSalvarEdicaoConteudo = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const fd = new FormData();
+            
+            // Adiciona os campos básicos
+            fd.append('titulo', conteudoSelecionado.titulo);
+            fd.append('descricao', conteudoSelecionado.descricao);
+            
+            // Adiciona os novos arquivos, se houver
+            if (novosArquivos && novosArquivos.length > 0) {
+                for (let i = 0; i < novosArquivos.length; i++) {
+                    fd.append('arquivos', novosArquivos[i]);
+                }
+            }
+            
+            // Adiciona a lista de arquivos existentes, se houver
+            if (conteudoSelecionado.arquivos && conteudoSelecionado.arquivos.length > 0) {
+                for (let i = 0; i < conteudoSelecionado.arquivos.length; i++) {
+                    fd.append('arquivosExistentes', conteudoSelecionado.arquivos[i].id);
+                    console.log(fd);
+                }
+            }
+    
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`http://127.0.0.1:5000/editar-conteudo/${conteudoSelecionado._id}`, {
                 method: 'PUT',
                 headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
+                    // Não incluir Content-Type aqui, deixe o navegador definir automaticamente
                 },
-                body: JSON.stringify({
-                    titulo: conteudoSelecionado.titulo,
-                    autor: conteudoSelecionado.autor,
-                    descricao: conteudoSelecionado.descricao,
-                    arquivos: conteudoSelecionado.arquivos
-                })
+                body: fd
             });
     
             if (response.ok) {
- 
+                if (arquivosParaDelete && arquivosParaDelete.length > 0) {
+                    for (let i = 0; i < arquivosParaDelete.length; i++) {
+                        await handleDeletarArquivo(arquivosParaDelete[i].id);
+                    }
+                }
                 await fetchConteudos();
                 handleCloseEditModalConteudo();
-                
             } else {
-                console.error('Erro ao editar conteúdo:', response.statusText);
+                const errorData = await response.json();
+                console.error('Erro ao editar conteúdo:', errorData.message);
             }
         } catch (error) {
             console.error('Erro de conexão:', error);
@@ -375,26 +397,28 @@ export function GerenciaMateria() {
 
     const handleCriarNovoConteudo = async () => {
         try {
+            const fd = new FormData();
+            for (let i = 0; i < novosArquivos.length; i++) {
+                fd.append('arquivos', novosArquivos[i]);
+            }
+    
+            // Adicione os outros campos ao FormData, pois o FormData permite misturar arquivos com outros dados
+            fd.append('titulo', novoConteudo.titulo);
+            fd.append('autor', novoConteudo.autor);
+            fd.append('descricao', novoConteudo.descricao);
+            fd.append('materia', materia);
+    
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
             const response = await fetch('http://127.0.0.1:5000/criar-conteudo', {
                 method: 'POST',
                 headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    titulo: novoConteudo.titulo,
-                    autor: novoConteudo.autor,
-                    descricao: novoConteudo.descricao,
-                    arquivos: novosArquivos,
-                    materia: materia,
-
-                })
+                body: fd // Agora o body é o FormData diretamente
             });
     
             if (response.ok) {
-                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
+                // Supondo que o conteúdo é adicionado com sucesso, você pode atualizar a lista de conteúdos localmente
                 fetchConteudos();
                 handleNovoConteudoClose(); // Fecha o modal
             } else {
@@ -404,6 +428,7 @@ export function GerenciaMateria() {
             console.error('Erro de conexão:', error);
         }
     };
+    
 
     const handleDeletarConteudo = async () => {
         try {
@@ -418,9 +443,10 @@ export function GerenciaMateria() {
             });
     
             if (response.ok) {
-                // Remover o aviso da lista localmente
+                
                 fetchConteudos();
                 handleCloseEditModalConteudo();
+                
             } else {
                 console.error('Erro ao deletar conteudo:', response.statusText);
             }
@@ -441,8 +467,91 @@ export function GerenciaMateria() {
         });
     };
 
-    const handleRemoverNovoArquivo = (arquivo) => {
-        setNovosArquivos(novosArquivos.filter((arq) => arq !== arquivo));
+    const handleDeletarArquivo = async (id) => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/deletar-arquivo/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                // Remover o arquivo da lista localmente
+                setConteudoSelecionado({
+                    ...conteudoSelecionado,
+                    arquivos: conteudoSelecionado.arquivos.filter((arq) => arq.id !== id),
+                });
+            } else {
+                console.error('Erro ao deletar arquivo:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    
+    const handleBaixarArquivo = async (fileId) => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch(`http://127.0.0.1:5000/baixar-arquivo/${fileId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao baixar o arquivo');
+        }
+
+        const data = await response.json();
+        const { filename, content } = data;
+
+        // Converte Base64 para Blob e inicia o download
+        const byteCharacters = atob(content);
+        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray]);
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Erro ao baixar o arquivo:', error);
+    }
+};
+
+
+
+    // Função para manipular o upload de novos arquivos
+    const handleNovoArquivoUpload = (e) => {
+        const arquivosSelecionados = Array.from(e.target.files); // Converte FileList para Array
+        setNovosArquivos((prevArquivos) => [...prevArquivos, ...arquivosSelecionados]);
+    };
+
+    // Função para remover um novo arquivo selecionado
+    const handleRemoverNovoArquivo = (arquivoRemover) => {
+        setNovosArquivos((prevArquivos) =>
+            prevArquivos.filter((arquivo) => arquivo !== arquivoRemover)
+        );
+    };
+
+    const handleRemoverArquivoExistente = (arquivo) => {
+        setArquivosParaDelete([...arquivosParaDelete, arquivo]);
+        setConteudoSelecionado({
+            ...conteudoSelecionado,
+            arquivos: conteudoSelecionado.arquivos.filter((arq) => arq !== arquivo),
+        });
     };
 
     const handleAdicionarNovoArquivo = () => {
@@ -910,39 +1019,67 @@ export function GerenciaMateria() {
                             <Typography variant="h6" sx={{ marginTop: '10px', fontWeight: 'bold', fontFamily: 'Open sans', color:'black' }}>
                                 Arquivos
                             </Typography>
-                            {conteudoSelecionado.arquivos.map((arquivo, index) => (
+                            {conteudoSelecionado.arquivos && conteudoSelecionado.arquivos.map((arquivo, index) => (
                                 <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                                    <Typography sx={{ fontFamily:'open sans', color:'black', flexGrow: 1 }}>{arquivo}</Typography>
+                                    <Typography sx={{ fontFamily:'open sans', color:'black', flexGrow: 1 }}>{arquivo.filename}</Typography>
                                     <Box sx={{ display: 'flex', gap: '10px' }}>
                                         <Button
                                             sx={{ backgroundColor: 'red', color: 'white'}}
-                                            onClick={() => handleRemoverArquivo(arquivo)}
+                                            onClick={() => handleRemoverArquivoExistente(arquivo)}
                                         >
                                             Remover
                                         </Button>
                                         <Button
                                             sx={{ backgroundColor: '#015495', color: 'white'}}
-                                            onClick={() => window.open(`/caminho/para/o/arquivo/${arquivo}`, '_blank')} // Aqui você deve substituir pelo caminho correto
+                                            onClick={() => handleBaixarArquivo(arquivo.id)}
                                         >
                                             Baixar
                                         </Button>
                                     </Box>
                                 </Grid>
                             ))}
-                            {/* Adicionar novo arquivo */}
 
-                           
-                            {novosArquivos.map((novoArquivo, index) => (
-                                <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                                    <Typography>{novoArquivo}</Typography>
-                                    <Button
-                                        sx={{ backgroundColor: 'red', color: 'white' }}
-                                        onClick={() => handleRemoverNovoArquivo(novoArquivo)}
-                                    >
-                                        Remover
-                                    </Button>
-                                </Grid>
-                            ))}
+                            {/* Upload de novos arquivos */}
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {/* Input de arquivo personalizado */}
+                                <input
+                                    type="file"
+                                    id="upload-input"
+                                    style={{ display: 'none' }} // Oculta o input original
+                                    multiple
+                                    onChange={(e) => handleNovoArquivoUpload(e)}
+                                />
+                                
+                                <Button
+                                    onClick={() => document.getElementById('upload-input').click()}
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#015495', // Azul personalizado
+                                        color: 'white',
+                                        mt: 3,
+                                        width: 150,
+                                        height: 40,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 1,
+                                    }}
+                                    startIcon={<CloudUploadIcon />} // Ícone de upload
+                                >
+                                    Arquivos
+                                </Button>
+
+                                
+                            </Box>
+                            {/* Exibe os nomes dos arquivos selecionados */}
+                            {novosArquivos.length > 0 && (
+                                    <Typography sx={{ color: 'black', fontSize: '10px' }}>
+                                        {novosArquivos.map((file) => file.name).join(', ')}
+                                    </Typography>
+                                )}
+
+
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                                 <Button onClick={handleSalvarEdicaoConteudo} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
                                     Salvar
@@ -953,12 +1090,12 @@ export function GerenciaMateria() {
                                 <Button onClick={handleCloseEditModalConteudo} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
                                     Fechar
                                 </Button>
-                                
                             </Box>
                         </div>
                     )}
                 </Box>
             </Modal>
+
 
             {/* Modal para adicionar novo conteúdo */}
             <Modal
@@ -1001,33 +1138,63 @@ export function GerenciaMateria() {
                         onChange={(e) =>handleNovoConteudoChange('descricao', e.target.value)}
                     />
 
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {/* Input de arquivo personalizado */}
+                        <input
+                            type="file"
+                            id="upload-input"
+                            style={{ display: 'none' }} // Oculta o input original
+                            multiple
+                            onChange={(e) => setNovosArquivos([...e.target.files])}
+                        />
+                        
+                        <Button
+                            onClick={() => document.getElementById('upload-input').click()}
+                            variant="contained"
+                            sx={{
+                                backgroundColor: '#015495', // Azul personalizado
+                                color: 'white',
+                                mt: 3,
+                                width: 150,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 1,
+                            }}
+                            startIcon={<CloudUploadIcon />} // Ícone de upload
+                        >
+                            Arquivos
+                        </Button>
+
+                        
+                    </Box>
+                    {/* Exibe os nomes dos arquivos selecionados */}
+                    {novosArquivos.length > 0 && (
+                            <Typography sx={{ color: 'black', fontSize: '10px' }}>
+                                {novosArquivos.map((file) => file.name).join(', ')}
+                            </Typography>
+                        )}
+
                     
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 1 }}>
+                        <Button
+                            onClick={handleCriarNovoConteudo}
+                            variant="contained"
+                            sx={{ mt: 3, backgroundColor: 'green', color: 'white' }}
+                        >
+                            Adicionar
+                        </Button>
+                        <Button
+                            onClick={handleNovoConteudoClose}
+                            variant="contained"
+                            sx={{ mt: 3, backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                        >
+                            Fechar
+                        </Button>  
+                    </Box>
                     
-                    {novosArquivos.map((novoArquivo, index) => (
-                        <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                            <Typography>{novoArquivo}</Typography>
-                            <Button
-                                sx={{ backgroundColor: 'red', color: 'white' }}
-                                onClick={() => handleRemoverNovoArquivo(novoArquivo)}
-                            >
-                                Remover
-                            </Button>
-                        </Grid>
-                    ))}
-                    <Button
-                        onClick={handleCriarNovoConteudo}
-                        variant="contained"
-                        sx={{ mt: 3, backgroundColor: 'green', color: 'white' }}
-                    >
-                        Adicionar
-                    </Button>
-                    <Button
-                        onClick={handleNovoConteudoClose}
-                        variant="contained"
-                        sx={{ mt: 3, backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
-                    >
-                        Fechar
-                    </Button>
                 </Box>
             </Modal>
 

@@ -115,6 +115,7 @@ export function LoginPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    
                 },
                 body: JSON.stringify({ matricula, senha }),
                 credentials: 'include', // Manter as credenciais incluídas

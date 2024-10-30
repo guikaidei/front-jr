@@ -90,11 +90,12 @@ export function CadastraAluno() {
                     trilha: ''
                 });
             } else {
-                alert('Erro ao realizar cadastro');
+                const errorData = await response.json();
+                alert('Erro ao realizar cadastro: ' +  errorData.message);
             }
         } catch (error) {
             console.error('Erro:', error);
-            alert('Erro ao realizar cadastro');
+            alert('Erro ao realizar cadastro: ' + error);
         }
     };
 
