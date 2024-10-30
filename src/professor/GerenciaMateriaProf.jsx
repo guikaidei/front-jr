@@ -7,9 +7,10 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { NavBar } from '../common/navbar';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, set } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 import { AuthContext } from '../context/AuthContext';
+
 
 const CustomButton = styled(Button)(({ theme }) => ({
     '&.MuiButton-containedPrimary': {
@@ -58,22 +59,17 @@ const VisuallyHiddenInput = styled('input')({
 
 export function GerenciaMateriaProf() {
 
-    // Lista de avisos
-    const [avisos, setAvisos] = useState([]);
-
-
-    // Lista de conteúdos
-    const [conteudos, setConteudos] = useState([]);
-
     const materiasFormatadas = {
         'matematica': 'Matemática',
         'portugues': 'Português',
         'humanas': 'Humanas',
         'naturais': 'Naturais',
-    }
+    };
+
+
+    
 
     const navigate = useNavigate();
-    const { materia } = useParams();
     const { isAuthenticated, user } = useContext(AuthContext); // Pegando o status de autenticação e o tipo de usuário
 
     useEffect(() => {
@@ -83,18 +79,30 @@ export function GerenciaMateriaProf() {
         }
     }, [isAuthenticated, user, navigate]);
 
+    const { materia } = useParams(); // Pegando o parâmetro da rota
+
+
+
+    const [avisos, setAvisos] = useState([]);  // Estado para armazenar avisos da API
     const [modalNovoAviso, setModalNovoAviso] = useState(false); // Modal para novo aviso
     const [novoAviso, setNovoAviso] = useState({ titulo: '', conteudo: '' }); // Novo aviso
     const [openEditModal, setOpenEditModal] = useState(false);
     const [avisoSelecionado, setAvisoSelecionado] = useState(null);
 
+    const [conteudos, setConteudos] = useState([]); // Estado para armazenar conteúdos da API
     const [modalNovoConteudo, setModalNovoConteudo] = useState(false);
     const [conteudoSelecionado, setConteudoSelecionado] = useState(null);
     const [openEditModalConteudo, setOpenEditModalConteudo] = useState(false);
     const [arquivoInput, setArquivoInput] = useState(null); // Para novo arquivo
     const [novosArquivos, setNovosArquivos] = useState([]); // Para armazenar novos arquivos
     const [novoConteudo, setNovoConteudo] = useState({ titulo: '', autor: '', descricao: '', arquivos: [] });
+    const [arquivosParaDelete, setArquivosParaDelete] = useState([]); // Para armazenar arquivos a serem deletados
 
+    const [aulas, setAulas] = useState([]);
+    const [modalNovaAula, setModalNovaAula] = useState(false);
+    const [aulaEmEdicao, setAulaEmEdicao] = useState(null);
+    const [openEditModalAula, setOpenEditModalAula] = useState(false);
+    const [novaAula, setNovaAula] = useState({ horarioInicio: '', horarioFim: '' });
 
     const parseDate = (dateStr) => {
         const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
@@ -158,12 +166,47 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    const fetchAulas = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/listar-aulas/${materia}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+                    'Aceess-Control-Allow-Credentials': 'true',
+                    'Acess-Control-Max-Age': '86400',
+                    
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+            
+                // Ordenar as aulas pelo horário de início
+                const aulasOrdenadas = data.aulas.sort((a, b) => {
+                    const horarioA = new Date(`1970-01-01T${a.horarioInicio}:00`); // Supondo que o horário esteja no formato HH:mm
+                    const horarioB = new Date(`1970-01-01T${b.horarioInicio}:00`);
+                    return horarioA - horarioB; // Ordena em ordem crescente
+                });
+
+                setAulas(aulasOrdenadas);  // Armazena as aulas ordenadas no estado
+            } else {
+                console.error('Erro ao buscar aulas:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+
 
     useEffect(() => {
         fetchAvisos();  // Chamada à função para carregar os avisos
         fetchConteudos();  // Chamada à função para carregar os conteúdos
+        fetchAulas();  // Chamada à função para carregar as aulas
     }, []); // Executa apenas uma vez na montagem do componente
-
 
 
     const handleNovoAvisoOpen = () => {
@@ -172,7 +215,6 @@ export function GerenciaMateriaProf() {
 
     const handleNovoAvisoClose = () => {
         setModalNovoAviso(false);
-        setNovoAviso({ titulo: '', conteudo: '' }); // Limpar campos ao fechar
     };
 
     const handleNovoAvisoChange = (field, value) => {
@@ -276,6 +318,8 @@ export function GerenciaMateriaProf() {
     };
 
 
+    
+
 
     // Handlers para modal de novo conteúdo
     const handleNovoConteudoOpen = () => {
@@ -284,8 +328,8 @@ export function GerenciaMateriaProf() {
 
     const handleNovoConteudoClose = () => {
         setModalNovoConteudo(false);
-        setNovoConteudo({ titulo: '', autor: '', descricao: '', arquivos: [] }); // Limpar campos ao fechar
-        setNovosArquivos([]); // Limpar arquivos ao fechar
+        setNovoConteudo({ titulo: '', autor: '', descricao: '', arquivos: [] });
+        setNovosArquivos([]); // Limpar novos arquivos ao fechar
     };
 
     // Handlers para modal de edição de conteúdo
@@ -298,33 +342,53 @@ export function GerenciaMateriaProf() {
         setOpenEditModalConteudo(false);
         setConteudoSelecionado(null);
         setNovosArquivos([]); // Limpar novos arquivos ao fechar
+        setArquivosParaDelete([]); // Limpar arquivos para deletar ao fechar
     };
 
     const handleSalvarEdicaoConteudo = async () => {
         try {
-            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const fd = new FormData();
+            
+            // Adiciona os campos básicos
+            fd.append('titulo', conteudoSelecionado.titulo);
+            fd.append('descricao', conteudoSelecionado.descricao);
+            
+            // Adiciona os novos arquivos, se houver
+            if (novosArquivos && novosArquivos.length > 0) {
+                for (let i = 0; i < novosArquivos.length; i++) {
+                    fd.append('arquivos', novosArquivos[i]);
+                }
+            }
+            
+            // Adiciona a lista de arquivos existentes, se houver
+            if (conteudoSelecionado.arquivos && conteudoSelecionado.arquivos.length > 0) {
+                for (let i = 0; i < conteudoSelecionado.arquivos.length; i++) {
+                    fd.append('arquivosExistentes', conteudoSelecionado.arquivos[i].id);
+                    console.log(fd);
+                }
+            }
+    
+            const token = localStorage.getItem('jwtToken');
             const response = await fetch(`http://127.0.0.1:5000/editar-conteudo/${conteudoSelecionado._id}`, {
                 method: 'PUT',
                 headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
+                    // Não incluir Content-Type aqui, deixe o navegador definir automaticamente
                 },
-                body: JSON.stringify({
-                    titulo: conteudoSelecionado.titulo,
-                    autor: conteudoSelecionado.autor,
-                    descricao: conteudoSelecionado.descricao,
-                    arquivos: conteudoSelecionado.arquivos
-                })
+                body: fd
             });
     
             if (response.ok) {
- 
+                if (arquivosParaDelete && arquivosParaDelete.length > 0) {
+                    for (let i = 0; i < arquivosParaDelete.length; i++) {
+                        await handleDeletarArquivo(arquivosParaDelete[i].id);
+                    }
+                }
                 await fetchConteudos();
                 handleCloseEditModalConteudo();
-                
             } else {
-                console.error('Erro ao editar conteúdo:', response.statusText);
+                const errorData = await response.json();
+                console.error('Erro ao editar conteúdo:', errorData.message);
             }
         } catch (error) {
             console.error('Erro de conexão:', error);
@@ -333,26 +397,28 @@ export function GerenciaMateriaProf() {
 
     const handleCriarNovoConteudo = async () => {
         try {
+            const fd = new FormData();
+            for (let i = 0; i < novosArquivos.length; i++) {
+                fd.append('arquivos', novosArquivos[i]);
+            }
+    
+            // Adicione os outros campos ao FormData, pois o FormData permite misturar arquivos com outros dados
+            fd.append('titulo', novoConteudo.titulo);
+            fd.append('autor', novoConteudo.autor);
+            fd.append('descricao', novoConteudo.descricao);
+            fd.append('materia', materia);
+    
             const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
             const response = await fetch('http://127.0.0.1:5000/criar-conteudo', {
                 method: 'POST',
                 headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    titulo: novoConteudo.titulo,
-                    autor: novoConteudo.autor,
-                    descricao: novoConteudo.descricao,
-                    arquivos: novosArquivos,
-                    materia: materia,
-
-                })
+                body: fd // Agora o body é o FormData diretamente
             });
     
             if (response.ok) {
-                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
+                // Supondo que o conteúdo é adicionado com sucesso, você pode atualizar a lista de conteúdos localmente
                 fetchConteudos();
                 handleNovoConteudoClose(); // Fecha o modal
             } else {
@@ -362,6 +428,7 @@ export function GerenciaMateriaProf() {
             console.error('Erro de conexão:', error);
         }
     };
+    
 
     const handleDeletarConteudo = async () => {
         try {
@@ -376,9 +443,10 @@ export function GerenciaMateriaProf() {
             });
     
             if (response.ok) {
-                // Remover o aviso da lista localmente
+                
                 fetchConteudos();
                 handleCloseEditModalConteudo();
+                
             } else {
                 console.error('Erro ao deletar conteudo:', response.statusText);
             }
@@ -387,6 +455,11 @@ export function GerenciaMateriaProf() {
         }
     };
 
+    const handleNovoConteudoChange = (field, value) => {
+        setNovoConteudo({ ...novoConteudo, [field]: value });
+    };
+
+
     const handleRemoverArquivo = (arquivo) => {
         setConteudoSelecionado({
             ...conteudoSelecionado,
@@ -394,8 +467,91 @@ export function GerenciaMateriaProf() {
         });
     };
 
-    const handleRemoverNovoArquivo = (arquivo) => {
-        setNovosArquivos(novosArquivos.filter((arq) => arq !== arquivo));
+    const handleDeletarArquivo = async (id) => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/deletar-arquivo/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                // Remover o arquivo da lista localmente
+                setConteudoSelecionado({
+                    ...conteudoSelecionado,
+                    arquivos: conteudoSelecionado.arquivos.filter((arq) => arq.id !== id),
+                });
+            } else {
+                console.error('Erro ao deletar arquivo:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    
+    const handleBaixarArquivo = async (fileId) => {
+    try {
+        const token = localStorage.getItem('jwtToken');
+        const response = await fetch(`http://127.0.0.1:5000/baixar-arquivo/${fileId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao baixar o arquivo');
+        }
+
+        const data = await response.json();
+        const { filename, content } = data;
+
+        // Converte Base64 para Blob e inicia o download
+        const byteCharacters = atob(content);
+        const byteNumbers = Array.from(byteCharacters).map(char => char.charCodeAt(0));
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray]);
+        const url = window.URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Erro ao baixar o arquivo:', error);
+    }
+};
+
+
+
+    // Função para manipular o upload de novos arquivos
+    const handleNovoArquivoUpload = (e) => {
+        const arquivosSelecionados = Array.from(e.target.files); // Converte FileList para Array
+        setNovosArquivos((prevArquivos) => [...prevArquivos, ...arquivosSelecionados]);
+    };
+
+    // Função para remover um novo arquivo selecionado
+    const handleRemoverNovoArquivo = (arquivoRemover) => {
+        setNovosArquivos((prevArquivos) =>
+            prevArquivos.filter((arquivo) => arquivo !== arquivoRemover)
+        );
+    };
+
+    const handleRemoverArquivoExistente = (arquivo) => {
+        setArquivosParaDelete([...arquivosParaDelete, arquivo]);
+        setConteudoSelecionado({
+            ...conteudoSelecionado,
+            arquivos: conteudoSelecionado.arquivos.filter((arq) => arq !== arquivo),
+        });
     };
 
     const handleAdicionarNovoArquivo = () => {
@@ -406,7 +562,117 @@ export function GerenciaMateriaProf() {
     };
 
 
+
+
+
+
+    // Add new state for classes
     
+    // Handlers for class management
+    const handleNovaAulaOpen = () => {
+        setModalNovaAula(true);
+    };
+
+    const handleNovaAulaClose = () => {
+        setModalNovaAula(false);
+        setAulaEmEdicao(null);
+    };
+
+    const handleOpenEditModalAula = (aula) => {
+        setAulaEmEdicao({ ...aula });
+        setOpenEditModalAula(true);
+    };
+
+    const handleCloseEditModalAula = () => {
+        setOpenEditModalAula(false);
+        setAulaEmEdicao(null);
+    };
+
+    const handleSalvarEdicaoAula = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/editar-aula/${aulaEmEdicao._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    horarioInicio: aulaEmEdicao.horarioInicio,
+                    horarioFim: aulaEmEdicao.horarioFim,
+
+                })
+            });
+    
+            if (response.ok) {
+ 
+                await fetchAulas();
+                handleCloseEditModalAula();
+                
+            } else {
+                console.error('Erro ao editar aula:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    const handleCriarNovaAula = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch('http://127.0.0.1:5000/criar-aula', {
+                method: 'POST',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    horarioInicio: novaAula.horarioInicio,
+                    horarioFim: novaAula.horarioFim,
+                    materia: materia,
+
+                })
+            });
+    
+            if (response.ok) {
+                // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
+                fetchAulas();
+                handleNovaAulaClose(); // Fecha o modal
+            } else {
+                console.error('Erro ao criar aula:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+    const handleDeletarAula = async () => {
+        try {
+            const token = localStorage.getItem('jwtToken'); // Supondo que o token JWT está armazenado no localStorage
+            const response = await fetch(`http://127.0.0.1:5000/deletar-aula/${aulaEmEdicao._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+    
+            if (response.ok) {
+                // Remover o aviso da lista localmente
+                fetchAulas();
+                handleCloseEditModalAula();
+            } else {
+                console.error('Erro ao deletar conteudo:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro de conexão:', error);
+        }
+    };
+
+
 
     return (
         <Box sx={{ paddingTop: '80px', fontFamily: 'Open Sans' }}>
@@ -438,72 +704,65 @@ export function GerenciaMateriaProf() {
                     Avisos
                 </Typography>
                 
-                {/* Container for scrollable list */}
-                <Box 
-                    sx={{
-                        width: '100%',
-                        maxWidth: '600px',
-                        height: '400px', // Fixed height for scroll
-                        overflow: 'auto', // Enable scroll
-                        // Custom scrollbar styling
-                        '&::-webkit-scrollbar': {
-                            width: '8px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            background: '#f1f1f1',
-                            borderRadius: '4px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: '#015495',
-                            borderRadius: '4px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: '#013d6b',
-                        },
-                    }}
-                >
-                    <List sx={{ 
-                        backgroundColor: '#ffffff', 
-                        borderRadius: '0px', 
-                        width: '100%',
-                        paddingRight: '10px', // Add padding to prevent content from touching scrollbar
-                    }}>
-                        {avisos.map((aviso, index) => (
-                            <ListItem
-                                key={index}
-                                sx={{
-                                    marginBottom: '10px',
-                                    backgroundColor: 'white',
-                                    boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
-                                    padding: '15px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                }}
-                            >
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
-                                        {aviso.titulo}
-                                    </Typography>
-                                    <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
-                                        Matéria: {aviso.materia}
-                                    </Typography>
-                                    <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
-                                        {aviso.data}
-                                    </Typography>
-                                </Box>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<EditIcon />}
-                                    onClick={() => handleOpenEditModal(aviso)}
-                                    sx={{ backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                {/* Verificação se a lista de avisos está vazia */}
+                {avisos.length === 0 ? (
+                    <Typography sx={{ color: '#666', fontFamily: 'Open Sans', fontSize: '18px', marginTop: '20px' }}>
+                        Nenhum aviso encontrado
+                    </Typography>
+                ) : (
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            maxWidth: '600px',
+                            height: '400px', // Fixed height for scroll
+                            overflow: 'auto', // Enable scroll
+                            '&::-webkit-scrollbar': { width: '8px' },
+                            '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '4px' },
+                            '&::-webkit-scrollbar-thumb': { background: '#015495', borderRadius: '4px' },
+                            '&::-webkit-scrollbar-thumb:hover': { background: '#013d6b' },
+                        }}
+                    >
+                        <List sx={{ backgroundColor: '#ffffff', borderRadius: '0px', width: '100%', paddingRight: '10px' }}>
+                            {avisos.map((aviso, index) => (
+                                <ListItem
+                                    key={index}
+                                    sx={{
+                                        marginBottom: '10px',
+                                        backgroundColor: 'white',
+                                        boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+                                        padding: '15px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
                                 >
-                                    Editar
-                                </Button>
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Typography variant="h6" sx={{ color: 'black', fontWeight: 'bold', fontFamily: 'Open Sans' }}>
+                                            {aviso.titulo}
+                                        </Typography>
+                                        <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                            Matéria: {aviso.materia.charAt(0).toUpperCase() + aviso.materia.slice(1)}
+                                        </Typography>
+                                        <Typography variant="subtitle1" sx={{ color: '#666', fontWeight: 300, fontFamily: 'Open Sans' }}>
+                                            Autor: {aviso.autor}
+                                        </Typography>
+                                        <Typography variant="subtitle2" sx={{ color: '#015495', fontWeight: 500, fontFamily: 'Open Sans', marginTop: '5px' }}>
+                                            {aviso.data}
+                                        </Typography>
+                                    </Box>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<EditIcon />}
+                                        onClick={() => handleOpenEditModal(aviso)}
+                                        sx={{ backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                                    >
+                                        Editar
+                                    </Button>
+                                </ListItem>
+                            ))}
+                        </List>
+                    </Box>
+                )}
 
                 <CustomButton
                     variant="contained"
@@ -513,7 +772,7 @@ export function GerenciaMateriaProf() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginTop: '20px', // Added margin to separate from scroll container
+                        marginTop: '20px',
                     }}
                     onClick={handleNovoAvisoOpen}
                 >
@@ -641,27 +900,31 @@ export function GerenciaMateriaProf() {
             </Modal>
 
             {/* Seção de Conteúdos */}
-            <Box sx={{ backgroundColor: '#ab2325', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '40px' }}>
+            <Box sx={{ backgroundColor: '#ab2325', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                 <Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontFamily: 'Open sans' }}>
                     Conteúdos
                 </Typography>
 
-                {/* Container de lista rolável */}
-                <Box 
-                    sx={{
-                        width: '100%',
-                        maxWidth: '600px',
-                        height: '400px',
-                        overflow: 'auto',
-                        '&::-webkit-scrollbar': {
-                            width: '8px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: '#015495',
-                            borderRadius: '4px',
-                        },
-                    }}
-                >
+                {conteudos.length === 0 ? (
+                    <Typography sx={{ color: 'white', fontFamily: 'Open Sans', fontSize: '18px', marginTop: '20px' }}>
+                        Nenhum conteúdo encontrado
+                    </Typography>
+                ) : (
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            maxWidth: '600px',
+                            height: '400px',
+                            overflow: 'auto',
+                            '&::-webkit-scrollbar': {
+                                width: '8px',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                backgroundColor: '#015495',
+                                borderRadius: '4px',
+                            },
+                        }}
+                    >
                     <List sx={{ backgroundColor: '#ffffff', borderRadius: '0px', width: '100%', paddingRight: '10px' }}>
                         {conteudos.map((conteudo, index) => (
                             <ListItem
@@ -688,6 +951,7 @@ export function GerenciaMateriaProf() {
                         ))}
                     </List>
                 </Box>
+                )}
 
                 {/* Botão para adicionar novo conteúdo */}
                 <CustomButton variant="contained" color="primary" onClick={handleNovoConteudoOpen}>
@@ -695,6 +959,7 @@ export function GerenciaMateriaProf() {
                     <AddIcon sx={{ marginLeft: '8px' }} />
                 </CustomButton>
             </Box>
+                
 
             {/* Modal para editar conteúdo */}
             <Modal
@@ -754,39 +1019,67 @@ export function GerenciaMateriaProf() {
                             <Typography variant="h6" sx={{ marginTop: '10px', fontWeight: 'bold', fontFamily: 'Open sans', color:'black' }}>
                                 Arquivos
                             </Typography>
-                            {conteudoSelecionado.arquivos.map((arquivo, index) => (
+                            {conteudoSelecionado.arquivos && conteudoSelecionado.arquivos.map((arquivo, index) => (
                                 <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                                    <Typography sx={{ fontFamily:'open sans', color:'black', flexGrow: 1 }}>{arquivo}</Typography>
+                                    <Typography sx={{ fontFamily:'open sans', color:'black', flexGrow: 1 }}>{arquivo.filename}</Typography>
                                     <Box sx={{ display: 'flex', gap: '10px' }}>
                                         <Button
                                             sx={{ backgroundColor: 'red', color: 'white'}}
-                                            onClick={() => handleRemoverArquivo(arquivo)}
+                                            onClick={() => handleRemoverArquivoExistente(arquivo)}
                                         >
                                             Remover
                                         </Button>
                                         <Button
                                             sx={{ backgroundColor: '#015495', color: 'white'}}
-                                            onClick={() => window.open(`/caminho/para/o/arquivo/${arquivo}`, '_blank')} // Aqui você deve substituir pelo caminho correto
+                                            onClick={() => handleBaixarArquivo(arquivo.id)}
                                         >
                                             Baixar
                                         </Button>
                                     </Box>
                                 </Grid>
                             ))}
-                            {/* Adicionar novo arquivo */}
 
-                           
-                            {novosArquivos.map((novoArquivo, index) => (
-                                <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                                    <Typography>{novoArquivo}</Typography>
-                                    <Button
-                                        sx={{ backgroundColor: 'red', color: 'white' }}
-                                        onClick={() => handleRemoverNovoArquivo(novoArquivo)}
-                                    >
-                                        Remover
-                                    </Button>
-                                </Grid>
-                            ))}
+                            {/* Upload de novos arquivos */}
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {/* Input de arquivo personalizado */}
+                                <input
+                                    type="file"
+                                    id="upload-input"
+                                    style={{ display: 'none' }} // Oculta o input original
+                                    multiple
+                                    onChange={(e) => handleNovoArquivoUpload(e)}
+                                />
+                                
+                                <Button
+                                    onClick={() => document.getElementById('upload-input').click()}
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#015495', // Azul personalizado
+                                        color: 'white',
+                                        mt: 3,
+                                        width: 150,
+                                        height: 40,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 1,
+                                    }}
+                                    startIcon={<CloudUploadIcon />} // Ícone de upload
+                                >
+                                    Arquivos
+                                </Button>
+
+                                
+                            </Box>
+                            {/* Exibe os nomes dos arquivos selecionados */}
+                            {novosArquivos.length > 0 && (
+                                    <Typography sx={{ color: 'black', fontSize: '10px' }}>
+                                        {novosArquivos.map((file) => file.name).join(', ')}
+                                    </Typography>
+                                )}
+
+
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                                 <Button onClick={handleSalvarEdicaoConteudo} variant="contained" sx={{ backgroundColor: 'green', color: 'white', fontFamily: 'Open Sans' }}>
                                     Salvar
@@ -797,12 +1090,12 @@ export function GerenciaMateriaProf() {
                                 <Button onClick={handleCloseEditModalConteudo} variant="contained" sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open Sans' }}>
                                     Fechar
                                 </Button>
-                                
                             </Box>
                         </div>
                     )}
                 </Box>
             </Modal>
+
 
             {/* Modal para adicionar novo conteúdo */}
             <Modal
@@ -824,16 +1117,15 @@ export function GerenciaMateriaProf() {
                         boxShadow: 24,
                     }}
                 >
-                    <Typography id="modal-novo-conteudo-titulo" variant="h6" component="h2" sx={{ color: 'black', fontWeight: 'bold' }}>
+                    <Typography id="modal-novo-conteudo-titulo" variant="h6" component="h2" sx={{ color: 'black', fontWeight: 'bold', fontFamily:'Open sans' }}>
                         Adicionar Novo Conteúdo
                     </Typography>
                     <TextField
                         label="Título"
                         fullWidth
                         margin="normal"
-                        value={novoConteudo.titulo || ''}
-                        onChange={(e) =>
-                            setNovoConteudo({ ...novoConteudo, titulo: e.target.value })
+                        value={novoConteudo.titulo}
+                        onChange={ (e) => handleNovoConteudoChange('titulo', e.target.value)
                         }
                     />
                     <TextField
@@ -842,41 +1134,71 @@ export function GerenciaMateriaProf() {
                         multiline
                         rows={4}
                         margin="normal"
-                        value={novoConteudo.descricao || ''}
-                        onChange={(e) =>
-                            setNovoConteudo({ ...novoConteudo, descricao: e.target.value })
-                        }
+                        value={novoConteudo.descricao}
+                        onChange={(e) =>handleNovoConteudoChange('descricao', e.target.value)}
                     />
+
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {/* Input de arquivo personalizado */}
+                        <input
+                            type="file"
+                            id="upload-input"
+                            style={{ display: 'none' }} // Oculta o input original
+                            multiple
+                            onChange={(e) => setNovosArquivos([...e.target.files])}
+                        />
+                        
+                        <Button
+                            onClick={() => document.getElementById('upload-input').click()}
+                            variant="contained"
+                            sx={{
+                                backgroundColor: '#015495', // Azul personalizado
+                                color: 'white',
+                                mt: 3,
+                                width: 150,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 1,
+                            }}
+                            startIcon={<CloudUploadIcon />} // Ícone de upload
+                        >
+                            Arquivos
+                        </Button>
+
+                        
+                    </Box>
+                    {/* Exibe os nomes dos arquivos selecionados */}
+                    {novosArquivos.length > 0 && (
+                            <Typography sx={{ color: 'black', fontSize: '10px' }}>
+                                {novosArquivos.map((file) => file.name).join(', ')}
+                            </Typography>
+                        )}
+
                     
-                    {novosArquivos.map((novoArquivo, index) => (
-                        <Grid container key={index} alignItems="center" justifyContent="space-between" marginBottom='10px'>
-                            <Typography>{novoArquivo}</Typography>
-                            <Button
-                                sx={{ backgroundColor: 'red', color: 'white' }}
-                                onClick={() => handleRemoverNovoArquivo(novoArquivo)}
-                            >
-                                Remover
-                            </Button>
-                        </Grid>
-                    ))}
-                    <Button
-                        onClick={handleCriarNovoConteudo}
-                        variant="contained"
-                        sx={{ mt: 3, backgroundColor: 'green', color: 'white' }}
-                    >
-                        Adicionar
-                    </Button>
-                    <Button
-                        onClick={handleNovoConteudoClose}
-                        variant="contained"
-                        sx={{ mt: 3, backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
-                    >
-                        Fechar
-                    </Button>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: 1 }}>
+                        <Button
+                            onClick={handleCriarNovoConteudo}
+                            variant="contained"
+                            sx={{ mt: 3, backgroundColor: 'green', color: 'white' }}
+                        >
+                            Adicionar
+                        </Button>
+                        <Button
+                            onClick={handleNovoConteudoClose}
+                            variant="contained"
+                            sx={{ mt: 3, backgroundColor: '#015495', color: 'white', marginLeft: '10px' }}
+                        >
+                            Fechar
+                        </Button>  
+                    </Box>
+                    
                 </Box>
             </Modal>
 
-            
+        
         </Box>
     );
 }
