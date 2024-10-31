@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import '../index.css'; // Importação do CSS global
+import React, { useEffect, useState, useContext } from 'react';
+import '../index.css';
 import {
   Box,
   Grid,
@@ -9,11 +9,14 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  Modal,
+  Button,
+  Paper,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { NavBar } from '../common/navbar';
+import { AuthContext } from '../context/AuthContext';
 
 const CustomButton = styled('button')({
   width: '200px',
@@ -37,6 +40,60 @@ const CustomTable = styled(Table)({
   boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
 });
 
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '80%',
+  maxWidth: '500px',
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+  p: 4,
+  borderRadius: '8px',
+};
+
+const MateriaBox = styled(Paper)(({ theme }) => ({
+  padding: '30px',
+  textAlign: 'center',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+      transform: 'scale(1.05)',
+      boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
+  },
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  minHeight: '250px', // Altura mínima para todas as telas
+  [theme.breakpoints.up('md')]: {
+      minHeight: '400px', // Altura mínima em telas médias e grandes
+      justifyContent: 'center',
+  },
+}));
+
+const BoxGeral = styled(Box)(({ theme }) => ({
+  fontFamily: 'Open Sans', 
+  display: 'flex', 
+  flexDirection: 'column', 
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginBottom: '40px',
+  paddingBottom: '40px',
+  backgroundColor: '#ab2325',
+  paddingTop: '40px',
+}));
+
+// Componente estilizado para as imagens das matérias
+const MateriaImage = styled('img')({
+  width: '100%',
+  height: '150px',
+  objectFit: 'cover',
+  borderRadius: '8px',
+  marginBottom: '15px',
+});
+
+
 export function HomeAluno() {
   const navigate = useNavigate();
   const [nomeAluno, setNomeAluno] = useState('');
@@ -44,35 +101,84 @@ export function HomeAluno() {
   const [materias, setMaterias] = useState([]);
   const [simulados, setSimulados] = useState([]);
   const [avisos, setAvisos] = useState([]);
+  const [openModal, setOpenModal] = useState(false); // Controla a abertura do modal
+  const [selectedAviso, setSelectedAviso] = useState(null); // Armazena o aviso selecionado
+  const { isAuthenticated, user } = useContext(AuthContext);
+
+  const parseDate = (dateStr) => {
+    const [dia, mes, ano] = dateStr.split('/');
+    return new Date(`${ano}-${mes}-${dia}`);
+  };
 
   useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      console.error('Token ausente');
+    if (!isAuthenticated || user.tipo !== 'aluno') {
       navigate('/login');
-      return;
     }
+  }, [isAuthenticated, user, navigate]);
 
-    axios
-      .get('http://localhost:5000/home-aluno', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response) => {
-        const aluno = response.data;
-        setNomeAluno(aluno.nome);
-        setGradeHoraria(aluno.grade_horaria || []);
-        setMaterias(aluno.materias || []);
-        setSimulados(aluno.notas || []);
-        setAvisos(aluno.avisos || []);
-      })
-      .catch((error) => {
-        console.error('Erro ao buscar dados do aluno:', error);
+  const materiasFormatadas = {
+    'matematica': 'Matemática',
+    'portugues': 'Português',
+    'humanas': 'Humanas',
+    'naturais': 'Naturais',
+    'geral': 'Geral',
+  };
+
+  const imagensMaterias = {
+    'matematica': '/assets/foto_matematica.jpg',
+    'portugues': '/assets/foto_portugues.jpg',
+    'humanas': '/assets/foto_humanas.jpg',
+    'naturais': '/assets/foto_biologia.jpg',
+};
+
+
+  const fetchHomeAluno = async () => {
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const response = await fetch('http://127.0.0.1:5000/home-aluno', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+        },
       });
-  }, [navigate]);
+      if (response.ok) {
+        const data = await response.json();
+        const avisosOrdenados = data.avisos.sort((a, b) => parseDate(b.data) - parseDate(a.data));
+        setAvisos(avisosOrdenados);
+        setNomeAluno(data.nome);
+        setGradeHoraria(data.grade_horaria);
+        setMaterias(data.materias);
+        setSimulados(data.notas);
+      } else {
+        console.error('Erro ao buscar avisos:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Erro de conexão:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHomeAluno();
+  }, []);
 
   const handleMateriaClick = (materia) => {
-    navigate(`/listar-conteudos/${encodeURIComponent(materia)}`);
+    navigate(`/visualizar-materia/${materia}`);
   };
+
+  // Função para abrir o modal com o aviso selecionado
+  const handleAvisoClick = (aviso) => {
+    setSelectedAviso(aviso);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSelectedAviso(null);
+  };
+
 
   return (
     <Box sx={{ paddingTop: '80px', fontFamily: 'Open Sans' }}>
@@ -81,7 +187,7 @@ export function HomeAluno() {
       <Typography
         variant="h4"
         gutterBottom
-        sx={{ color: '#015495', fontWeight: 'bold', textAlign: 'center' }}
+        sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans', textAlign: 'center' }}
       >
         Bem-vindo, {nomeAluno}!
       </Typography>
@@ -100,20 +206,20 @@ export function HomeAluno() {
       >
         <Typography
           variant="h5"
-          sx={{ color: '#015495', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px' }}
+          sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans', textAlign: 'center', marginBottom: '20px' }}
         >
           Grade Horária
         </Typography>
         <CustomTable>
           <TableHead>
             <TableRow>
-              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold' }}>
+              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans',}}>
                 Matéria
               </TableCell>
-              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold' }}>
+              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans', }}>
                 Início
               </TableCell>
-              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold' }}>
+              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans', }}>
                 Fim
               </TableCell>
             </TableRow>
@@ -121,9 +227,9 @@ export function HomeAluno() {
           <TableBody>
             {gradeHoraria.map((item, index) => (
               <TableRow key={index}>
-                <TableCell align="center">{item.materia}</TableCell>
-                <TableCell align="center">{item.horarioInicio}</TableCell>
-                <TableCell align="center">{item.horarioFim}</TableCell>
+                <TableCell align="center" sx={{ fontFamily: 'Open sans',}}>{materiasFormatadas[item.materia]}</TableCell>
+                <TableCell align="center" sx={{ fontFamily: 'Open sans',}}>{item.horarioInicio}</TableCell>
+                <TableCell align="center" sx={{ fontFamily: 'Open sans',}}>{item.horarioFim}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -131,42 +237,55 @@ export function HomeAluno() {
       </Box>
 
       {/* Matérias */}
-      <Box
-        sx={{
-          backgroundColor: '#ab2325',
-          padding: '20px',
-          marginBottom: '20px',
-          borderRadius: '12px',
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{ color: 'white', marginBottom: '10px', fontWeight: 'bold', textAlign: 'center' }}
-        >
-          Suas Matérias
-        </Typography>
-        <Grid container spacing={2} justifyContent="center">
-          {materias.map((materia, index) => (
-            <Grid item key={index}>
-              <CustomButton onClick={() => handleMateriaClick(materia)}>
-                {materia}
-              </CustomButton>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+      <BoxGeral >
+          <Typography 
+              variant="h4" 
+              gutterBottom 
+              sx={{ 
+                  color: 'white', 
+                  fontWeight: 'bold', 
+                  marginBottom: '30px', 
+                  fontFamily: 'Open Sans',
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
 
+              }}
+          >
+              Matérias
+          </Typography>
+
+          <Grid container spacing={4} justifyContent="center" sx={{ maxWidth: '1200px' }}>
+              {materias.map((materia, index) => (
+                  <Grid item xs={12} sm={6} md={3} key={index}>
+                      <MateriaBox onClick={() => handleMateriaClick(materia)}>
+                          <MateriaImage src={imagensMaterias[materia]} alt={materiasFormatadas[materia]} />
+                          <Typography variant="h6" sx={{ color: '#333', fontWeight: 'bold', fontFamily: 'Open Sans', marginTop: '15px' }}>
+                              {materiasFormatadas[materia]}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Open Sans', marginTop: '10px' }}>
+                              Clique para acessar o conteúdo de {materiasFormatadas[materia]}.
+                          </Typography>
+                      </MateriaBox>
+                  </Grid>
+              ))}
+          </Grid>
+      </BoxGeral>
+
+      {/* Avisos */}
       {/* Avisos */}
       <Box
         sx={{
           backgroundColor: 'white',
           padding: '20px',
-          marginBottom: '20px',
+          marginBottom: '40px', // Adiciona margem inferior de 40px
           borderRadius: '12px',
           boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
           maxWidth: '800px',
-          margin: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginLeft: 'auto',  // Centraliza horizontalmente
+          marginRight: 'auto', // Centraliza horizontalmente
         }}
       >
         <Typography
@@ -178,25 +297,10 @@ export function HomeAluno() {
         <CustomTable>
           <TableBody>
             {avisos.map((aviso, index) => (
-              <TableRow key={index}>
+              <TableRow key={index} onClick={() => handleAvisoClick(aviso)} sx={{ cursor: 'pointer' }}>
                 <TableCell>
-                  <Typography
-                    variant="h6"
-                    sx={{ color: 'black', fontWeight: 'bold', marginBottom: '5px' }}
-                  >
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '5px' }}>
                     {aviso.titulo}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{ color: '#666', marginBottom: '10px' }}
-                  >
-                    {aviso.conteudo}
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ color: '#666', marginBottom: '5px' }}>
-                    Matéria: {aviso.materia}
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ color: '#666', marginBottom: '5px' }}>
-                    Autor: {aviso.autor}
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#015495', fontWeight: 'bold' }}>
                     {aviso.data}
@@ -207,6 +311,46 @@ export function HomeAluno() {
           </TableBody>
         </CustomTable>
       </Box>
+
+      {/* Modal para mostrar detalhes do aviso */}
+      <Modal open={openModal} onClose={handleCloseModal}>
+      <Box sx={modalStyle}>
+        {selectedAviso && (
+          <>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '10px', color: 'black', fontFamily: 'Open sans' }}>
+              {selectedAviso.titulo}
+            </Typography>
+            <Typography variant="body1" sx={{ marginBottom: '10px', color: 'black', fontFamily: 'Open sans' }}>
+              {selectedAviso.conteudo}
+            </Typography>
+            <Typography variant="subtitle1" sx={{ marginBottom: '5px', color: 'black', fontFamily: 'Open sans' }}>
+              Matéria: {materiasFormatadas[selectedAviso.materia]}
+            </Typography>
+            <Typography variant="subtitle1" sx={{ marginBottom: '5px', color: 'black', fontFamily: 'Open sans' }}>
+              Autor: {selectedAviso.autor}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans' }}>
+              {selectedAviso.data}
+            </Typography>
+          </>
+        )}
+
+        {/* Box adicional para centralizar o botão na parte inferior */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: '#015495', color: 'white', fontFamily: 'Open sans' }}
+            onClick={handleCloseModal}
+          >
+            Fechar
+          </Button>
+        </Box>
+      </Box>
+
+        
+       
+        
+      </Modal>
 
       {/* Notas dos Simulados */}
       <Box
@@ -221,17 +365,17 @@ export function HomeAluno() {
       >
         <Typography
           variant="h5"
-          sx={{ color: '#015495', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px' }}
+          sx={{ color: '#015495', fontWeight: 'bold', textAlign: 'center', marginBottom: '20px', fontFamily: 'Open sans' }}
         >
           Notas dos Simulados
         </Typography>
         <CustomTable>
           <TableHead>
             <TableRow>
-              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold' }}>
+              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans' }}>
                 Simulado
               </TableCell>
-              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold' }}>
+              <TableCell align="center" sx={{ color: '#015495', fontWeight: 'bold', fontFamily: 'Open sans' }}>
                 Nota
               </TableCell>
             </TableRow>
