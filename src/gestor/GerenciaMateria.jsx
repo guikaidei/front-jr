@@ -54,6 +54,69 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 
+const TimeInput = ({ label, value, onChange, fullWidth = true }) => {
+    const handleTimeChange = (e) => {
+      let timeValue = e.target.value;
+      const previousValue = value || '';
+      
+      // Remove qualquer caractere que não seja número ou :
+      timeValue = timeValue.replace(/[^\d:]/g, '');
+      
+      // Se estiver deletando (novo valor é menor que o anterior), não formata
+      if (timeValue.length < previousValue.length) {
+        onChange(timeValue);
+        return;
+      }
+      
+      // Adiciona : apenas quando digitando e chegou em 2 dígitos
+      if (timeValue.length === 2 && !timeValue.includes(':')) {
+        timeValue = `${timeValue}:`;
+      }
+      
+      // Valida o formato 24h (HH:mm) apenas quando completo
+      if (timeValue.length === 5) {
+        const isValidTime = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(timeValue);
+        if (!isValidTime) {
+          return;
+        }
+      }
+      
+      onChange(timeValue);
+    };
+  
+    const handleKeyDown = (e) => {
+      // Permite teclas de controle (backspace, delete, setas)
+      if (e.key === 'Backspace' || e.key === 'Delete' || 
+          e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        return;
+      }
+      
+      // Bloqueia entrada quando já tem 5 caracteres (HH:mm)
+      if (value?.length === 5 && !e.key.match(/[\d:]/) && 
+          !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+      }
+    };
+  
+    return (
+      <TextField
+        label={label}
+        type="text"
+        fullWidth={fullWidth}
+        value={value || ''}
+        onChange={handleTimeChange}
+        onKeyDown={handleKeyDown}
+        InputLabelProps={{
+          shrink: true,
+        }}
+        inputProps={{
+          maxLength: 5,
+          placeholder: "HH:mm"
+        }}
+      />
+    );
+  };
+
 
 export function GerenciaMateria() {
 
@@ -98,7 +161,7 @@ export function GerenciaMateria() {
 
     const [aulas, setAulas] = useState([]); // Estado para armazenar aulas da API
     const [modalNovaAula, setModalNovaAula] = useState(false); // Modal para nova aula
-    const [aulaEmEdicao, setAulaEmEdicao] = useState(null); // Aula selecionada
+    const [aulaEmEdicao, setAulaEmEdicao] = useState({ horarioInicio: '', horarioFim: '' }); // Aula selecionada
     const [openEditModalAula, setOpenEditModalAula] = useState(false); // Modal para edição de aula
     const [novaAula, setNovaAula] = useState({ horarioInicio: '', horarioFim: '' }); // Nova aula
 
@@ -106,6 +169,8 @@ export function GerenciaMateria() {
         const [dia, mes, ano] = dateStr.split('/'); // Divide a string em dia, mês e ano
         return new Date(`${ano}-${mes}-${dia}`); // Retorna um objeto Date no formato ISO
     };
+
+    
 
     // Função para buscar avisos da API
     const fetchAvisos = async () => {
@@ -583,7 +648,7 @@ export function GerenciaMateria() {
 
     const handleNovaAulaClose = () => {
         setModalNovaAula(false);
-        setAulaEmEdicao(null);
+        setNovaAula({ horarioInicio: '', horarioFim: '' });
     };
 
     const handleOpenEditModalAula = (aula) => {
@@ -593,7 +658,7 @@ export function GerenciaMateria() {
 
     const handleCloseEditModalAula = () => {
         setOpenEditModalAula(false);
-        setAulaEmEdicao(null);
+        setAulaEmEdicao( { horarioInicio: '', horarioFim: '' });
     };
 
     // Função para manipular a mudança de horário de início e fim da aula
@@ -650,6 +715,8 @@ export function GerenciaMateria() {
                 // Supondo que o aviso é adicionado com sucesso, você pode atualizar a lista de avisos localmente
                 fetchAulas();
                 handleNovaAulaClose(); // Fecha o modal
+                console.log(novaAula.horarioFim);
+
             } else {
                 console.error('Erro ao criar aula:', response.statusText);
             }
@@ -1297,33 +1364,17 @@ export function GerenciaMateria() {
                     </Typography>
                     <Grid container spacing={2} sx={{ mt: 2 }}>
                         <Grid item xs={6}>
-                            <TextField
-                                label="Horário de Início"
-                                type="time"
-                                fullWidth
-                                value={aulaEmEdicao?.horarioInicio || ''}
-                                onChange={(e) => setAulaEmEdicao({ ...aulaEmEdicao, horarioInicio: e.target.value })}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                inputProps={{
-                                    step: 300, // 5 minutes
-                                }}
+                            <TimeInput
+                            label="Horário de Início"
+                            value={aulaEmEdicao.horarioInicio}
+                            onChange={(value) => setAulaEmEdicao({ ...aulaEmEdicao, horarioInicio: value })}
                             />
                         </Grid>
                         <Grid item xs={6}>
-                            <TextField
-                                label="Horário de Término"
-                                type="time"
-                                fullWidth
-                                value={aulaEmEdicao?.horarioFim || ''}
-                                onChange={(e) => setAulaEmEdicao({ ...aulaEmEdicao, horarioFim: e.target.value })}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                inputProps={{
-                                    step: 300, // 5 minutes
-                                }}
+                            <TimeInput
+                            label="Horário de Término"
+                            value={aulaEmEdicao.horarioFim}
+                            onChange={(value) => setAulaEmEdicao({ ...aulaEmEdicao, horarioFim: value })}
                             />
                         </Grid>
                     </Grid>
@@ -1367,33 +1418,17 @@ export function GerenciaMateria() {
                     </Typography>
                     <Grid container spacing={2} sx={{ mt: 2 }}>
                         <Grid item xs={6}>
-                            <TextField
-                                label="Horário de Início"
-                                type="time"
-                                fullWidth
-                                value={novaAula.horarioInicio || ''}
-                                onChange={(e) => setNovaAula({ ...novaAula, horarioInicio: e.target.value })}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                inputProps={{
-                                    step: 300, // 5 minutes
-                                }}
+                            <TimeInput
+                            label="Horário de Início"
+                            value={novaAula.horarioInicio}
+                            onChange={(value) => setNovaAula({ ...novaAula, horarioInicio: value })}
                             />
                         </Grid>
                         <Grid item xs={6}>
-                            <TextField
-                                label="Horário de Término"
-                                type="time"
-                                fullWidth
-                                value={novaAula.horarioFim || ''}
-                                onChange={(e) => setNovaAula({ ...novaAula, horarioFim: e.target.value })}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                inputProps={{
-                                    step: 300, // 5 minutes
-                                }}
+                            <TimeInput
+                            label="Horário de Término"
+                            value={novaAula.horarioFim}
+                            onChange={(value) => setNovaAula({ ...novaAula, horarioFim: value })}
                             />
                         </Grid>
                     </Grid>
@@ -1415,4 +1450,5 @@ export function GerenciaMateria() {
             </Modal>
         </Box>
     );
+
 }
